@@ -270,6 +270,10 @@
         $( "#symbol" ).autocomplete({
           source: availableTags
         });
+
+        $("button[type=submit]").click(function() {
+          $(".error, .success").hide();
+        });
       });
     </script>
   </body>
