@@ -44,6 +44,8 @@
 
     <script type="text/javascript">
       $(function() {
+        $("#symbol").focus().select();
+
         var availableTags = [
           "AAVEVNDC",
           "ARBVNDC",
@@ -263,12 +265,12 @@
           "YGGVNDC",
           "ZRXVNDC",
           "INJVNDC"
-      ];
+        ];
+        
         $( "#symbol" ).autocomplete({
           source: availableTags
         });
       });
     </script>
-    
   </body>
 </html>
