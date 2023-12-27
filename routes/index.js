@@ -3,7 +3,7 @@ var router = express.Router();
 const axios = require('axios');
 
 var data = {}
-data.leverages = [10, 15, 20, 25]
+data.leverages = [5, 10, 15, 20, 25, 30]
 data.symbols = [
   "AAVEVNDC",
   "ARBVNDC",
@@ -225,6 +225,7 @@ data.symbols = [
   "INJVNDC"
 ]
 data.vols = [
+  80000,
   100000,
   200000,
   500000,
