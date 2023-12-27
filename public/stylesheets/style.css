@@ -1,6 +1,7 @@
 body {
   padding: 50px;
   margin-top: 20px;
+  background-color: #131c32;
   font: 18px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
@@ -61,4 +62,16 @@ button {
 
 .success {
   background-color: green;
+}
+
+
+@media only screen and (max-width: 768px) {
+  form, select, textarea {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  input, select {
+    margin-bottom: 20px;
+  }
 }
