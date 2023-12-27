@@ -1,0 +1,64 @@
+body {
+  padding: 50px;
+  margin-top: 20px;
+  font: 18px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+
+form {
+  max-width: 530px;
+  margin: auto;
+}
+
+input, option, select, button, textarea {
+  padding: 6px 15px;
+  border: 1px solid #ccc;
+  font-size: 18px;
+}
+
+select {
+  width: 170px;
+}
+
+textarea {
+  width: 500px;
+}
+
+button {
+  color: #fff;
+  background-color: #00B7FF;
+  border: 0 !important;
+
+} 
+.buy, 
+.sell {
+  font-weight: bold;
+}
+
+.buy {
+  color: green;
+}
+
+.sell {
+  color: red;
+}
+
+.error, .success {
+  color: #fff;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 30px;
+  margin-top: 0;
+  padding: 5px 0;
+}
+
+.error {
+  background-color: red;
+}
+
+.success {
+  background-color: green;
+}

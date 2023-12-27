@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Trade</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+  </head>
+  <body>
+    <form method="post" action="">
+      <% if (data && data.error) { %>
+        <p class="error"><%= data.error %></p>  
+      <% } %>
+      <% if (data && data.success) { %>
+        <p class="success"><%= data.success %></p>  
+      <% } %>
+      <input type="radio" name="side" id="" value="BUY" <% if (data && data.side != "SELL") { %> checked <% } %>> <span class="buy">MUA</span>
+      &nbsp;&nbsp;&nbsp;&nbsp;
+      <input type="radio" name="side" id="" value="SELL" <% if (data && data.side == "SELL") { %> checked <% } %>> <span class="sell">BÁN</span>
+      <br>
+      <br>
+      <input type="text" name="symbol" id="symbol" style="width: 140px;" value="<% if (data && data.symbol) { %><%= data.symbol %><% } %>" placeholder="Mã lệnh...">
+      <select name="leverage" id="" required>
+        <option value="">Đòn bẩy...</option>
+        <% for(var i = 0; i < data.leverages.length; i++) { %>
+          <option value="<%= data.leverages[i] %>" <% if (data && data.leverage == data.leverages[i]) { %> selected <% } %>><%= data.leverages[i] %></option>
+        <% } %>
+      </select>
+      <select name="vol" id="" required>
+        <option value="">Khối lượng...</option>
+        <% for(var i = 0; i < data.vols.length; i++) { %>
+          <option value="<%= data.vols[i] %>" <% if (data && data.vol == data.vols[i]) { %> selected <% } %>><%= data.vols[i].toLocaleString('en-US') %> VNDC</option>
+        <% } %>
+      </select>
+      <br>
+      <br>
+        <button type="submit">Đặt lệnh</button>
+      <br>
+      <br>
+      <textarea name="token" id="" cols="30" rows="5" placeholder="Access token..." required><% if (data && data.token) { %><%= data.token %><% } %></textarea>
+    </form>
+
+    <script type="text/javascript">
+      $(function() {
+        var availableTags = [
+          "AAVEVNDC",
+          "ARBVNDC",
+          "ATOMVNDC",
+          "AVAXVNDC",
+          "BADGERVNDC",
+          "BCHVNDC",
+          "BLURVNDC",
+          "BNBVNDC",
+          "BTCVNDC",
+          "FXSVNDC",
+          "QTUMVNDC",
+          "RACA1000VNDC",
+          "RIFVNDC",
+          "SATS1000VNDC",
+          "STORJVNDC",
+          "STPTVNDC",
+          "MOVRVNDC",
+          "CRVVNDC",
+          "EDUVNDC",
+          "GRTVNDC",
+          "POWRVNDC",
+          "PYTHVNDC",
+          "ETHUSDT",
+          "HFTVNDC",
+          "ALPHAVNDC",
+          "ICPVNDC",
+          "ACEVNDC",
+          "SUPERVNDC",
+          "RATS1000VNDC",
+          "QIVNDC",
+          "AUCTIONVNDC",
+          "ARKMVNDC",
+          "DENTVNDC",
+          "KSMVNDC",
+          "ACHVNDC",
+          "BAKEVNDC",
+          "CELOVNDC",
+          "DODOVNDC",
+          "GODSVNDC",
+          "JTOVNDC",
+          "KASVNDC",
+          "LOOKSVNDC",
+          "MAGICVNDC",
+          "MINAVNDC",
+          "NEOVNDC",
+          "HIGHVNDC",
+          "IOSTVNDC",
+          "JOEVNDC",
+          "LEVERVNDC",
+          "LINKVNDC",
+          "MAVVNDC",
+          "MKRVNDC",
+          "NMRVNDC",
+          "LINAUSDT",
+          "ETHWVNDC",
+          "ONEVNDC",
+          "XEMVNDC",
+          "BNXVNDC",
+          "COREVNDC",
+          "EGLDVNDC",
+          "ETHVNDC",
+          "MBLVNDC",
+          "MEMEVNDC",
+          "NTRNVNDC",
+          "OPVNDC",
+          "ORDIVNDC",
+          "POLYXVNDC",
+          "COMPVNDC",
+          "MDTVNDC",
+          "OCEANVNDC",
+          "OPUSDT",
+          "ONUSVNDC",
+          "PEPE1000VNDC",
+          "PERPVNDC",
+          "RDNTVNDC",
+          "SHIB1000VNDC",
+          "ROSEVNDC",
+          "SANDVNDC",
+          "SEIVNDC",
+          "BONDVNDC",
+          "GLMRVNDC",
+          "ADAVNDC",
+          "AERGOVNDC",
+          "APTVNDC",
+          "IOTAVNDC",
+          "LUNC1000VNDC",
+          "NKNVNDC",
+          "RNDRVNDC",
+          "SKLVNDC",
+          "SLPVNDC",
+          "SNTVNDC",
+          "STARL1000VNDC",
+          "STEEMVNDC",
+          "STGVNDC",
+          "FLOKI1000VNDC",
+          "GALAVNDC",
+          "ADAUSDT",
+          "SOLUSDT",
+          "HBARVNDC",
+          "SPELLVNDC",
+          "SSVVNDC",
+          "STMXVNDC",
+          "STXVNDC",
+          "SUIVNDC",
+          "AXSVNDC",
+          "SNXVNDC",
+          "CETUSVNDC",
+          "ONGVNDC",
+          "RAREVNDC",
+          "STRAXVNDC",
+          "SXPVNDC",
+          "TIAVNDC",
+          "TOKENVNDC",
+          "TRBVNDC",
+          "TRXVNDC",
+          "TRUVNDC",
+          "TWTVNDC",
+          "USTCVNDC",
+          "VICVNDC",
+          "VINU1000000VNDC",
+          "TVNDC",
+          "UNFIVNDC",
+          "WLDVNDC",
+          "LINKUSDT",
+          "LPTVNDC",
+          "OGNVNDC",
+          "PENDLEVNDC",
+          "PEOPLEVNDC",
+          "UNIVNDC",
+          "WAVESVNDC",
+          "ARPAVNDC",
+          "BANDVNDC",
+          "BIGTIMEVNDC",
+          "BNBUSDT",
+          "BSVVNDC",
+          "DYDXVNDC",
+          "GASVNDC",
+          "CTKVNDC",
+          "EOSVNDC",
+          "ETCVNDC",
+          "FTMVNDC",
+          "DOTVNDC",
+          "BONK1000VNDC",
+          "ONSVNDC",
+          "AMBVNDC",
+          "APEVNDC",
+          "ARKVNDC",
+          "ATAVNDC",
+          "AUDIOVNDC",
+          "BLZVNDC",
+          "BNTVNDC",
+          "CEEKVNDC",
+          "CELVNDC",
+          "KAVAVNDC",
+          "KNCVNDC",
+          "CFXVNDC",
+          "LITVNDC",
+          "AGIXVNDC",
+          "BELVNDC",
+          "WAXPVNDC",
+          "MNAIVNDC",
+          "WOOVNDC",
+          "XRPVNDC",
+          "YFIVNDC",
+          "CTSIVNDC",
+          "BTCUSDT",
+          "COTIVNDC",
+          "ORBSVNDC",
+          "PEPE1000USDT",
+          "XRPUSDT",
+          "SOLVNDC",
+          "FILVNDC",
+          "GTCVNDC",
+          "HIFIVNDC",
+          "IDVNDC",
+          "SUSHIVNDC",
+          "XLMVNDC",
+          "ZILVNDC",
+          "API3VNDC",
+          "COMBOVNDC",
+          "ARBUSDT",
+          "ETCUSDT",
+          "SHIB1000USDT",
+          "LINAVNDC",
+          "LOOMVNDC",
+          "GMTVNDC",
+          "HOOKVNDC",
+          "ICXVNDC",
+          "KEYVNDC",
+          "LDOVNDC",
+          "LQTYVNDC",
+          "LTCVNDC",
+          "MASKVNDC",
+          "PHBVNDC",
+          "RADVNDC",
+          "RUNEVNDC",
+          "1INCHVNDC",
+          "AGLDVNDC",
+          "C98VNDC",
+          "CELRVNDC",
+          "DOGEVNDC",
+          "NEARVNDC",
+          "CHZVNDC",
+          "CYBERVNDC",
+          "DOGEUSDT",
+          "FRONTVNDC",
+          "GMXVNDC",
+          "MATICVNDC",
+          "MTLVNDC",
+          "FLMVNDC",
+          "BICOVNDC",
+          "CAKEVNDC",
+          "FETVNDC",
+          "IMXVNDC",
+          "XVSVNDC",
+          "YGGVNDC",
+          "ZRXVNDC",
+          "INJVNDC"
+      ];
+        $( "#symbol" ).autocomplete({
+          source: availableTags
+        });
+      });
+    </script>
+    
+  </body>
+</html>
