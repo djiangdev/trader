@@ -247,9 +247,20 @@ router.post('/', async function(req, res, next) {
   data.symbol = String(req.body.symbol);
   data.leverage = Number(req.body.leverage);
   data.vol = Number(req.body.vol);
-  data.token = String(req.body.token);
+  data.cookie = String(req.body.cookie);
 
   try{
+      const access = await axios.request({
+        method: 'get',
+        maxBodyLength: Infinity,
+        url: 'https://pro.goonus.io/api/auth/session',
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: data.cookie
+        }
+      });
+      const token = access.data.accessToken;
+
       const [request1, request2] = await Promise.all([
         axios.request({
           method: 'post',
@@ -257,7 +268,7 @@ router.post('/', async function(req, res, next) {
           url: 'https://api-pro.goonus.io/perpetual/v1/leverage',
           headers: { 
             'Content-Type': 'application/json', 
-            'Authorization': 'Bearer ' + data.token
+            'Authorization': 'Bearer ' + token
           },
           data : JSON.stringify({
             "symbol": data.symbol,
@@ -272,14 +283,13 @@ router.post('/', async function(req, res, next) {
           maxBodyLength: Infinity,
           url: 'https://api-pro.goonus.io/perpetual/v1/ticker/24hr?symbol=' + data.symbol,
           headers: { 
-            'Authorization': 'Bearer ' + data.token
+            'Authorization': 'Bearer ' + token
           }
         })
         .then((response) => {
           return response.data;
         })
       ]);
-
       const lastPrice = Number(request2.lastPrice);
       const size = data.vol / lastPrice;
       const result = await axios.request({
@@ -288,7 +298,7 @@ router.post('/', async function(req, res, next) {
         url: 'https://api-pro.goonus.io/perpetual/v1/order',
         headers: { 
           'Content-Type': 'application/json', 
-          'Authorization': 'Bearer ' + data.token
+          'Authorization': 'Bearer ' + token
         },
         data : JSON.stringify({
           "symbol": data.symbol,
@@ -306,8 +316,8 @@ router.post('/', async function(req, res, next) {
           "closePosition": false
         })
       });
-      
       console.log(result.data);
+      
       data.error = '';
       data.success = `${data.side} lệnh ${data.symbol} thành công!`;
   }
