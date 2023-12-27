@@ -29,6 +29,7 @@ select {
 
 textarea {
   width: 500px;
+  background-color: darkslategrey;
 }
 
 button {
@@ -37,6 +38,7 @@ button {
   border: 0 !important;
 
 } 
+
 .buy, 
 .sell {
   font-weight: bold;
