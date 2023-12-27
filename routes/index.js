@@ -225,7 +225,7 @@ data.symbols = [
   "INJVNDC"
 ]
 data.vols = [
-  80000,
+  50000,
   100000,
   200000,
   500000,
@@ -292,10 +292,10 @@ router.post('/', async function(req, res, next) {
         })
       ]);
 
+      const stopLossPercent = 45;
       const lastPrice = Number(request2.lastPrice);
       const size = data.vol/lastPrice;
       const isolatedMargin = (size*lastPrice) / data.leverage;
-      const stopLossPercent = 40;
       const lossMoney = (stopLossPercent/100) * isolatedMargin;
       let stopPrice = lastPrice + (lossMoney/size);
       if (data.side == 'BUY') stopPrice = lastPrice - (lossMoney/size);
