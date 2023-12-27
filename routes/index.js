@@ -322,7 +322,7 @@ router.post('/', async function(req, res, next) {
       data.success = `${data.side} lệnh ${data.symbol} thành công!`;
   }
   catch(error){
-      data.error = error.message;
+      data.error = error.response.data.message;
       data.success = '';
   }
 
