@@ -290,36 +290,69 @@ router.post('/', async function(req, res, next) {
           return response.data;
         })
       ]);
+
       const lastPrice = Number(request2.lastPrice);
-      const size = data.vol / lastPrice;
-      const result = await axios.request({
-        method: 'post',
-        maxBodyLength: Infinity,
-        url: 'https://api-pro.goonus.io/perpetual/v1/order',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': 'Bearer ' + token
-        },
-        data : JSON.stringify({
-          "symbol": data.symbol,
-          "side": data.side,
-          "type": "MARKET",
-          "positionSide": "BOTH",
-          "size": size,
-          "clientOrderId": "42466c03-44f3-4960-9e52-40501d2edcb0",
-          "userId": "42466c03-44f3-4960-9e52-40501d2edcb0",
-          "postOnly": false,
-          "workingType": "MARK_PRICE",
-          "stopPrice": "0",
-          "reduceOnly": false,
-          "timeInForce": "GTC",
-          "closePosition": false
+      const size = data.vol/lastPrice;
+      const isolatedMargin = (size*lastPrice) / data.leverage;
+      const stopLossPercent = 40;
+      const lossMoney = (stopLossPercent/100) * isolatedMargin;
+      let stopPrice = lastPrice + (lossMoney/size);
+      if (data.side == 'BUY') stopPrice = lastPrice - (lossMoney/size);
+
+      const result = await Promise.all([
+        axios.request({
+          method: 'post',
+          maxBodyLength: Infinity,
+          url: 'https://api-pro.goonus.io/perpetual/v1/order',
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': 'Bearer ' + token
+          },
+          data : JSON.stringify({
+            "symbol": data.symbol,
+            "side": data.side,
+            "type": "MARKET",
+            "positionSide": "BOTH",
+            "size": size,
+            "clientOrderId": "42466c03-44f3-4960-9e52-40501d2edcb0",
+            "userId": "42466c03-44f3-4960-9e52-40501d2edcb0",
+            "postOnly": false,
+            "workingType": "MARK_PRICE",
+            "stopPrice": 0,
+            "reduceOnly": false,
+            "timeInForce": "GTC",
+            "closePosition": false
+          })
+        }),
+        axios.request({
+          method: 'post',
+          maxBodyLength: Infinity,
+          url: 'https://api-pro.goonus.io/perpetual/v1/order',
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': 'Bearer ' + token
+          },
+          data : JSON.stringify({
+            "symbol": data.symbol,
+            "side": (data.side == 'BUY') ? 'SELL' : 'BUY',
+            "type": 'STOP',
+            "positionSide": "BOTH",
+            "clientOrderId": "42466c03-44f3-4960-9e52-40501d2edcb0",
+            "userId": "42466c03-44f3-4960-9e52-40501d2edcb0",
+            "postOnly": false,
+            "timeInForce": "GTC",
+            "reduceOnly": false,
+            "closePosition": true,
+            "price": 0,
+            "stopPrice": stopPrice,
+            "workingType": "CONTRACT_PRICE"
+          })
         })
-      });
-      console.log(result.data);
+      ]);
+      // console.log(result.data);
       
       data.error = '';
-      data.success = `${data.side} lệnh ${data.symbol} thành công!`;
+      data.success = `${data.side} lệnh ${data.symbol}!`;
   }
   catch(error){
       data.error = error.response.data.message;
