@@ -225,7 +225,7 @@ data.symbols = [
   "INJVNDC"
 ]
 data.vols = [
-  80000,
+  50000,
   100000,
   200000,
   500000,
@@ -300,7 +300,7 @@ router.post('/', async function(req, res, next) {
       let stopPrice = lastPrice + (lossMoney/size);
       if (data.side == 'BUY') stopPrice = lastPrice - (lossMoney/size);
 
-      const result = await Promise.all([
+      const [result1, result2] = await Promise.all([
         axios.request({
           method: 'post',
           maxBodyLength: Infinity,
@@ -324,6 +324,8 @@ router.post('/', async function(req, res, next) {
             "timeInForce": "GTC",
             "closePosition": false
           })
+        }).then((response) => {
+          return response.data;
         }),
         axios.request({
           method: 'post',
@@ -348,9 +350,12 @@ router.post('/', async function(req, res, next) {
             "stopPrice": stopPrice,
             "workingType": "CONTRACT_PRICE"
           })
+        }).then((response) => {
+          return response.data;
         })
       ]);
-      // console.log(result.data);
+
+      console.log(result1, result2);
       
       data.error = '';
       data.success = `${data.side} lệnh ${data.symbol}!`;
