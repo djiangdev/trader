@@ -410,7 +410,6 @@ router.post('/', async function(req, res, next) {
       data.success = `${data.side} lệnh ${data.symbol}!`;
   }
   catch(error){
-      console.log(error);
       data.error = error.response.data.message;
       data.success = '';
   }
