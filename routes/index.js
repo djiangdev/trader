@@ -332,33 +332,33 @@ router.post('/', async function(req, res, next) {
       let stopPrice = lastPrice + (lossMoney/newSize);
       if (data.side == 'BUY') stopPrice = lastPrice - (lossMoney/newSize);
 
-      let processes = [
-        axios.request({
-          method: 'post',
-          maxBodyLength: Infinity,
-          url: 'https://api-pro.goonus.io/perpetual/v1/order',
-          headers: { 
-            'Content-Type': 'application/json', 
-            'Authorization': 'Bearer ' + token
-          },
-          data : JSON.stringify({
-            "symbol": data.symbol,
-            "side": data.side,
-            "type": "MARKET",
-            "positionSide": "BOTH",
-            "size": size,
-            "clientOrderId": "42466c03-44f3-4960-9e52-40501d2edcb0",
-            "userId": "42466c03-44f3-4960-9e52-40501d2edcb0",
-            "postOnly": false,
-            "workingType": "MARK_PRICE",
-            "stopPrice": 0,
-            "reduceOnly": false,
-            "timeInForce": "GTC",
-            "closePosition": false
-          })
+      await axios.request({
+        method: 'post',
+        maxBodyLength: Infinity,
+        url: 'https://api-pro.goonus.io/perpetual/v1/order',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': 'Bearer ' + token
+        },
+        data : JSON.stringify({
+          "symbol": data.symbol,
+          "side": data.side,
+          "type": "MARKET",
+          "positionSide": "BOTH",
+          "size": size,
+          "clientOrderId": "42466c03-44f3-4960-9e52-40501d2edcb0",
+          "userId": "42466c03-44f3-4960-9e52-40501d2edcb0",
+          "postOnly": false,
+          "workingType": "MARK_PRICE",
+          "stopPrice": 0,
+          "reduceOnly": false,
+          "timeInForce": "GTC",
+          "closePosition": false
         })
-      ];
-
+      });
+      
+      let processes = [];
+      
       if (request4.length) {
         const checkStopLossExist = request4.find(x => x.symbol == data.symbol && x.type == 'STOP');
         if (checkStopLossExist) {
