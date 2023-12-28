@@ -266,7 +266,7 @@ router.post('/', async function(req, res, next) {
       });
       const token = access.data.accessToken;
 
-      const [request1, request2, request3, request4] = await Promise.all([
+      const [a, b] = await Promise.all([
         axios.request({
           method: 'post',
           maxBodyLength: Infinity,
@@ -293,44 +293,11 @@ router.post('/', async function(req, res, next) {
         })
         .then((response) => {
           return response.data;
-        }),
-        axios.request({
-          method: 'get',
-          maxBodyLength: Infinity,
-          url: 'https://api-pro.goonus.io/perpetual/v1/positions?status=OPEN',
-          headers: { 
-            'Authorization': 'Bearer ' + token
-          }
-        })
-        .then((response) => {
-          return response.data;
-        }),
-        axios.request({
-          method: 'get',
-          maxBodyLength: Infinity,
-          url: 'https://api-pro.goonus.io/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED',
-          headers: { 
-            'Authorization': 'Bearer ' + token
-          }
-        })
-        .then((response) => {
-          return response.data;
         })
       ]);
 
-      const lastPrice = Number(request2.lastPrice);
+      const lastPrice = Number(b.lastPrice);
       const size = data.vol/lastPrice;
-
-      let totalNotional = data.vol;
-      const checkNotionalExist = request3.length ? request3.find(x => x.symbol == data.symbol) : false;
-      if (checkNotionalExist) { 
-        totalNotional = checkNotionalExist.notional + data.vol;
-      }
-      const newSize = totalNotional/lastPrice;
-      const isolatedMargin = (newSize*lastPrice) / data.leverage;
-      const lossMoney = (stopLossPercent/100) * isolatedMargin;
-      let stopPrice = lastPrice + (lossMoney/newSize);
-      if (data.side == 'BUY') stopPrice = lastPrice - (lossMoney/newSize);
 
       await axios.request({
         method: 'post',
@@ -356,11 +323,47 @@ router.post('/', async function(req, res, next) {
           "closePosition": false
         })
       });
+
+      const [c, d] = await Promise.all([
+        axios.request({
+          method: 'get',
+          maxBodyLength: Infinity,
+          url: 'https://api-pro.goonus.io/perpetual/v1/positions?status=OPEN',
+          headers: { 
+            'Authorization': 'Bearer ' + token
+          }
+        })
+        .then((response) => {
+          return response.data;
+        }),
+        axios.request({
+          method: 'get',
+          maxBodyLength: Infinity,
+          url: 'https://api-pro.goonus.io/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED',
+          headers: { 
+            'Authorization': 'Bearer ' + token
+          }
+        })
+        .then((response) => {
+          return response.data;
+        })
+      ]);
+
+      let notional = data.vol;
+      const checkNotionalExist = c.length ? c.find(x => x.symbol == data.symbol) : false;
+      if (checkNotionalExist) { 
+        notional = checkNotionalExist.notional + data.vol;
+      }
+      const newSize = notional/lastPrice;
+      const isolatedMargin = (newSize*lastPrice) / data.leverage;
+      const lossMoney = (stopLossPercent/100) * isolatedMargin;
+      let stopPrice = lastPrice + (lossMoney/newSize);
+      if (data.side == 'BUY') stopPrice = lastPrice - (lossMoney/newSize);
       
       let processes = [];
       
-      if (request4.length) {
-        const checkStopLossExist = request4.find(x => x.symbol == data.symbol && x.type == 'STOP');
+      if (d.length) {
+        const checkStopLossExist = d.find(x => x.symbol == data.symbol && x.type == 'STOP');
         if (checkStopLossExist) {
           processes.push(await axios.request({
               method: 'delete',
