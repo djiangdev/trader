@@ -44,6 +44,10 @@
 
     <script type="text/javascript">
       $(function() {
+        $("#symbol").focus(function() {
+          $(this).select();
+        });
+
         $("#symbol").focus().select();
 
         var availableTags = [

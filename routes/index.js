@@ -264,7 +264,7 @@ router.post('/', async function(req, res, next) {
       });
       const token = access.data.accessToken;
 
-      const [request1, request2] = await Promise.all([
+      const [request1, request2, request3] = await Promise.all([
         axios.request({
           method: 'post',
           maxBodyLength: Infinity,
@@ -291,16 +291,30 @@ router.post('/', async function(req, res, next) {
         })
         .then((response) => {
           return response.data;
+        }),
+        axios.request({
+          method: 'get',
+          maxBodyLength: Infinity,
+          url: 'https://api-pro.goonus.io/perpetual/v1/positions?status=OPEN',
+          headers: { 
+            'Authorization': 'Bearer ' + token
+          }
+        })
+        .then((response) => {
+          return response.data;
         })
       ]);
 
       const stopLossPercent = 45;
       const lastPrice = Number(request2.lastPrice);
       const size = data.vol/lastPrice;
-      const isolatedMargin = (size*lastPrice) / data.leverage;
+      const notional = request3.length ? request3.find(x => x.symbol == data.symbol).notional : false;
+      const totalNotional = notional ? notional + data.vol : data.vol;
+      const notionalSize = totalNotional/lastPrice;
+      const isolatedMargin = (notionalSize*lastPrice) / data.leverage;
       const lossMoney = (stopLossPercent/100) * isolatedMargin;
-      let stopPrice = lastPrice + (lossMoney/size);
-      if (data.side == 'BUY') stopPrice = lastPrice - (lossMoney/size);
+      let stopPrice = lastPrice + (lossMoney/notionalSize);
+      if (data.side == 'BUY') stopPrice = lastPrice - (lossMoney/notionalSize);
 
       const [result1, result2] = await Promise.all([
         axios.request({
