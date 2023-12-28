@@ -266,7 +266,7 @@ router.post('/', async function(req, res, next) {
       });
       const token = access.data.accessToken;
 
-      const [request1, request2, request3] = await Promise.all([
+      const [request1, request2, request3, request4] = await Promise.all([
         axios.request({
           method: 'post',
           maxBodyLength: Infinity,
@@ -304,6 +304,17 @@ router.post('/', async function(req, res, next) {
         })
         .then((response) => {
           return response.data;
+        }),
+        axios.request({
+          method: 'get',
+          maxBodyLength: Infinity,
+          url: 'https://api-pro.goonus.io/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED',
+          headers: { 
+            'Authorization': 'Bearer ' + token
+          }
+        })
+        .then((response) => {
+          return response.data;
         })
       ]);
 
@@ -312,13 +323,13 @@ router.post('/', async function(req, res, next) {
 
       const notional = request3.length ? request3.find(x => x.symbol == data.symbol).notional : false;
       const totalNotional = notional ? notional + data.vol : data.vol;
-      const notionalSize = totalNotional/lastPrice;
-      const isolatedMargin = (notionalSize*lastPrice) / data.leverage;
+      const newSize = totalNotional/lastPrice;
+      const isolatedMargin = (newSize*lastPrice) / data.leverage;
       const lossMoney = (stopLossPercent/100) * isolatedMargin;
-      let stopPrice = lastPrice + (lossMoney/notionalSize);
-      if (data.side == 'BUY') stopPrice = lastPrice - (lossMoney/notionalSize);
+      let stopPrice = lastPrice + (lossMoney/newSize);
+      if (data.side == 'BUY') stopPrice = lastPrice - (lossMoney/newSize);
 
-      const [result1, result2] = await Promise.all([
+      let processes = [
         axios.request({
           method: 'post',
           maxBodyLength: Infinity,
@@ -344,8 +355,56 @@ router.post('/', async function(req, res, next) {
           })
         }).then((response) => {
           return response.data;
-        }),
-        axios.request({
+        })
+      ];
+
+      if (request4.length) {
+        const stopLossId = request4.find(x => x.symbol == data.symbol && x.type == 'STOP').id;
+        if (stopLossId) {
+          processes.push(axios.request({
+              method: 'delete',
+              maxBodyLength: Infinity,
+              url: 'https://api-pro.goonus.io/perpetual/v1/order',
+              headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': 'Bearer ' + token
+              },
+              data : JSON.stringify({
+                "id":stopLossId,
+                "symbol":data.symbol,
+                "clientOrderId":"42466c03-44f3-4960-9e52-40501d2edcb0"
+              })
+            }).then((response) => {
+              axios.request({
+                method: 'post',
+                maxBodyLength: Infinity,
+                url: 'https://api-pro.goonus.io/perpetual/v1/order',
+                headers: { 
+                  'Content-Type': 'application/json', 
+                  'Authorization': 'Bearer ' + token
+                },
+                data : JSON.stringify({
+                  "symbol": data.symbol,
+                  "side": (data.side == 'BUY') ? 'SELL' : 'BUY',
+                  "type": 'STOP',
+                  "positionSide": "BOTH",
+                  "clientOrderId": "42466c03-44f3-4960-9e52-40501d2edcb0",
+                  "userId": "42466c03-44f3-4960-9e52-40501d2edcb0",
+                  "postOnly": false,
+                  "timeInForce": "GTC",
+                  "reduceOnly": false,
+                  "closePosition": true,
+                  "price": 0,
+                  "stopPrice": stopPrice,
+                  "workingType": "CONTRACT_PRICE"
+                })
+              }).then((response) => {
+                return response.data;
+              });
+            }));
+        }
+      } else {
+        processes.push(axios.request({
           method: 'post',
           maxBodyLength: Infinity,
           url: 'https://api-pro.goonus.io/perpetual/v1/order',
@@ -370,11 +429,11 @@ router.post('/', async function(req, res, next) {
           })
         }).then((response) => {
           return response.data;
-        })
-      ]);
+        }));
+      }
 
-      console.log(result1, result2);
-      
+      await Promise.all(processes);
+
       data.error = '';
       data.success = `${data.side} lệnh ${data.symbol}!`;
   }
