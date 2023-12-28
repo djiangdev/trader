@@ -321,8 +321,11 @@ router.post('/', async function(req, res, next) {
       const lastPrice = Number(request2.lastPrice);
       const size = data.vol/lastPrice;
 
-      const notional = request3.length ? request3.find(x => x.symbol == data.symbol).notional : false;
-      const totalNotional = notional ? notional + data.vol : data.vol;
+      let totalNotional = data.vol;
+      const checkNotionalExist = request3.length ? request3.find(x => x.symbol == data.symbol) : false;
+      if (checkNotionalExist) { 
+        totalNotional = checkNotionalExist.notional + data.vol;
+      }
       const newSize = totalNotional/lastPrice;
       const isolatedMargin = (newSize*lastPrice) / data.leverage;
       const lossMoney = (stopLossPercent/100) * isolatedMargin;
@@ -353,15 +356,13 @@ router.post('/', async function(req, res, next) {
             "timeInForce": "GTC",
             "closePosition": false
           })
-        }).then((response) => {
-          return response.data;
         })
       ];
 
       if (request4.length) {
-        const stopLossId = request4.find(x => x.symbol == data.symbol && x.type == 'STOP').id;
-        if (stopLossId) {
-          processes.push(axios.request({
+        const checkStopLossExist = request4.find(x => x.symbol == data.symbol && x.type == 'STOP');
+        if (checkStopLossExist) {
+          processes.push(await axios.request({
               method: 'delete',
               maxBodyLength: Infinity,
               url: 'https://api-pro.goonus.io/perpetual/v1/order',
@@ -370,67 +371,38 @@ router.post('/', async function(req, res, next) {
                 'Authorization': 'Bearer ' + token
               },
               data : JSON.stringify({
-                "id":stopLossId,
+                "id":checkStopLossExist.id,
                 "symbol":data.symbol,
                 "clientOrderId":"42466c03-44f3-4960-9e52-40501d2edcb0"
               })
-            }).then((response) => {
-              axios.request({
-                method: 'post',
-                maxBodyLength: Infinity,
-                url: 'https://api-pro.goonus.io/perpetual/v1/order',
-                headers: { 
-                  'Content-Type': 'application/json', 
-                  'Authorization': 'Bearer ' + token
-                },
-                data : JSON.stringify({
-                  "symbol": data.symbol,
-                  "side": (data.side == 'BUY') ? 'SELL' : 'BUY',
-                  "type": 'STOP',
-                  "positionSide": "BOTH",
-                  "clientOrderId": "42466c03-44f3-4960-9e52-40501d2edcb0",
-                  "userId": "42466c03-44f3-4960-9e52-40501d2edcb0",
-                  "postOnly": false,
-                  "timeInForce": "GTC",
-                  "reduceOnly": false,
-                  "closePosition": true,
-                  "price": 0,
-                  "stopPrice": stopPrice,
-                  "workingType": "CONTRACT_PRICE"
-                })
-              }).then((response) => {
-                return response.data;
-              });
             }));
         }
-      } else {
-        processes.push(axios.request({
-          method: 'post',
-          maxBodyLength: Infinity,
-          url: 'https://api-pro.goonus.io/perpetual/v1/order',
-          headers: { 
-            'Content-Type': 'application/json', 
-            'Authorization': 'Bearer ' + token
-          },
-          data : JSON.stringify({
-            "symbol": data.symbol,
-            "side": (data.side == 'BUY') ? 'SELL' : 'BUY',
-            "type": 'STOP',
-            "positionSide": "BOTH",
-            "clientOrderId": "42466c03-44f3-4960-9e52-40501d2edcb0",
-            "userId": "42466c03-44f3-4960-9e52-40501d2edcb0",
-            "postOnly": false,
-            "timeInForce": "GTC",
-            "reduceOnly": false,
-            "closePosition": true,
-            "price": 0,
-            "stopPrice": stopPrice,
-            "workingType": "CONTRACT_PRICE"
-          })
-        }).then((response) => {
-          return response.data;
-        }));
       }
+
+      processes.push(axios.request({
+        method: 'post',
+        maxBodyLength: Infinity,
+        url: 'https://api-pro.goonus.io/perpetual/v1/order',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': 'Bearer ' + token
+        },
+        data : JSON.stringify({
+          "symbol": data.symbol,
+          "side": (data.side == 'BUY') ? 'SELL' : 'BUY',
+          "type": 'STOP',
+          "positionSide": "BOTH",
+          "clientOrderId": "42466c03-44f3-4960-9e52-40501d2edcb0",
+          "userId": "42466c03-44f3-4960-9e52-40501d2edcb0",
+          "postOnly": false,
+          "timeInForce": "GTC",
+          "reduceOnly": false,
+          "closePosition": true,
+          "price": 0,
+          "stopPrice": stopPrice,
+          "workingType": "CONTRACT_PRICE"
+        })
+      }));
 
       await Promise.all(processes);
 
@@ -438,6 +410,7 @@ router.post('/', async function(req, res, next) {
       data.success = `${data.side} lệnh ${data.symbol}!`;
   }
   catch(error){
+      console.log(error);
       data.error = error.response.data.message;
       data.success = '';
   }
