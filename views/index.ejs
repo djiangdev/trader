@@ -37,9 +37,16 @@
       <br>
       <br>
         <button type="submit">Đặt lệnh</button>
+        <br>
+        <br>
+        <button id="showList" type="button" style="background-color: blueviolet;">Vị thế</button>
       <br>
       <br>
-      <textarea name="cookie" id="" rows="5" placeholder="Cookie..."><% if (data && data.cookie) { %><%= data.cookie %><% } %></textarea>
+      <table class="table">
+        <tbody>
+        </tbody>
+      </table>
+      <textarea name="cookie" rows="3" placeholder="Cookie..."><% if (data && data.cookie) { %><%= data.cookie %><% } %></textarea>
     </form>
 
     <script type="text/javascript">
@@ -278,7 +285,43 @@
         $("button[type=submit]").click(function() {
           $(".error, .success").hide();
         });
+
+        $("#showList").click(function() {
+          $("table tbody").html('');
+          $.get("/list",
+            function(data, status){
+              if(Object.keys(data).length) {
+                data.forEach(x => {
+                  var html = '<tr>';
+                  html += '<td>' + x.symbol + '</td>';
+                  html += '<td style="text-align: center">';
+                  html += '<a href="javascript:;" onclick="closeSymbol(this, '+x.id+', \''+x.symbol+'\', '+x.size+')">';
+                  html += 'Đóng';
+                  html += '</a>';
+                  html += '</td>';
+                  html += '</tr>';
+                  $("table tbody").append(html);
+                });
+              } else {
+                $("table tbody").html('Bạn không có vị thế nào');
+              }
+            }
+          );
+        });
+        
+        setTimeout(function() {
+          $("#showList").trigger('click');
+        }, 2000);
       });
+
+      function closeSymbol(el, id, symbol, size) {
+        $.post("/close",
+          {id, size, symbol},
+          function(data, status){
+            el.closest('tr').remove();
+          }
+        );
+      }
     </script>
   </body>
 </html>

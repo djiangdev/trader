@@ -1,6 +1,6 @@
 body {
-  padding: 50px;
-  margin-top: 20px;
+  color: #fff;
+  margin-top: 30px;
   background-color: #131c32;
   background-image: url('../images/love.jpg');
   background-size: cover;
@@ -28,7 +28,7 @@ select {
 }
 
 textarea {
-  width: 500px;
+  width: 94%;
   background-color: darkslategrey;
 }
 
@@ -36,7 +36,8 @@ button {
   color: #fff;
   background-color: #00B7FF;
   border: 0 !important;
-
+  width: 100%;
+  cursor: pointer;
 } 
 
 .buy, 
@@ -67,6 +68,17 @@ button {
 
 .success {
   background-color: green;
+}
+
+table {
+  width: 100%;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+th, td {
+  border: 1px solid #fff;
+  padding: 3px 20px;
 }
 
 @media only screen and (max-width: 768px) {
