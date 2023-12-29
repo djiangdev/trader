@@ -407,6 +407,8 @@ router.post('/', async function(req, res, next) {
                 "symbol":data.symbol,
                 "clientOrderId":"42466c03-44f3-4960-9e52-40501d2edcb0"
               })
+            }).then((response) => {
+              return response.data;
             }));
         }
       }
@@ -434,6 +436,8 @@ router.post('/', async function(req, res, next) {
           "stopPrice": stopPrice,
           "workingType": "CONTRACT_PRICE"
         })
+      }).then((response) => {
+        return response.data;
       }));
 
       await Promise.all(processes);
