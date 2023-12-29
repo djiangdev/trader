@@ -1,6 +1,6 @@
 var express = require('express');
 var router = express.Router();
-const axios = require('axios');
+var axios = require('axios');
 
 const stopLossPercent = 45; // % SL
 
@@ -446,6 +446,7 @@ router.post('/', async function(req, res, next) {
       data.success = `${data.side} lệnh ${data.symbol}!`;
   }
   catch(error){
+      console.log(error.response.data);
       data.error = error.response.data.message || error.response.data.code;
       data.success = '';
   }
