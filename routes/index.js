@@ -328,7 +328,7 @@ router.post('/', async function(req, res, next) {
       const lastPrice = Number(b.lastPrice);
       const size = data.vol/lastPrice;
 
-      await axios.request({
+      const order = await axios.request({
         method: 'post',
         maxBodyLength: Infinity,
         url: 'https://api-pro.goonus.io/perpetual/v1/order',
@@ -446,7 +446,7 @@ router.post('/', async function(req, res, next) {
       data.success = `${data.side} lệnh ${data.symbol}!`;
   }
   catch(error){
-      data.error = error.response.data.message;
+      data.error = error.response.data.message || error.response.data.code;
       data.success = '';
   }
 
