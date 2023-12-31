@@ -322,6 +322,7 @@
       });
 
       function closeSymbol(el, id, symbol, size) {
+        $("table tbody").html('');
         $.post("/close",
           {id, size, symbol},
           function(data, status){
