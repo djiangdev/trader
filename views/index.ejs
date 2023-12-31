@@ -295,6 +295,7 @@
                   var html = '<tr>';
                   html += '<td>' + x.symbol + '</td>';
                   html += '<td>' + x.size + '</td>';
+                  html += '<td>' + Math.abs(x.size*x.entryPrice).toLocaleString('en-US') + '</td>';
                   html += '<td style="text-align: center">';
                   html += '<a href="javascript:;" onclick="closeSymbol(this, '+x.id+', \''+x.symbol+'\', '+x.size/2+')">';
                   html += 'Đóng 50%';
