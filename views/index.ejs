@@ -294,15 +294,15 @@
                 data.forEach(x => {
                   var html = '<tr>';
                   html += '<td>' + x.symbol + '</td>';
-                  html += '<td>' + x.size + '</td>';
+                  html += '<td>' + Math.abs(x.size) + '</td>';
                   html += '<td>' + Math.abs(x.size*x.entryPrice).toLocaleString('en-US') + '</td>';
                   html += '<td style="text-align: center">';
-                  html += '<a href="javascript:;" onclick="closeSymbol(this, '+x.id+', \''+x.symbol+'\', '+x.size/2+')">';
+                  html += '<a href="javascript:;" onclick="closeSymbol(this, '+x.id+', \''+x.symbol+'\', '+Math.abs(x.size/2)+')">';
                   html += 'Đóng 50%';
                   html += '</a>';
                   html += '</td>';
                   html += '<td style="text-align: center">';
-                  html += '<a href="javascript:;" onclick="closeSymbol(this, '+x.id+', \''+x.symbol+'\', '+x.size+')">';
+                  html += '<a href="javascript:;" onclick="closeSymbol(this, '+x.id+', \''+x.symbol+'\', '+Math.abs(x.size)+')">';
                   html += 'Đóng 100%';
                   html += '</a>';
                   html += '</td>';
@@ -325,7 +325,6 @@
         $.post("/close",
           {id, size, symbol},
           function(data, status){
-            // el.closest('tr').remove();
             $("#showList").trigger('click');
           }
         );
