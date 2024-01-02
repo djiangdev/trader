@@ -394,7 +394,7 @@ router.post('/', async function(req, res, next) {
       if (data.side == 'BUY') takePrice = lastPrice + (takeMoney/newSize);
       
       let processes = [];
-      
+      let d = d.filter(x => x.closePosition);
       if (d.length) {
         let p = [];
         d.forEach(el => {
