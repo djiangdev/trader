@@ -389,7 +389,7 @@ router.post('/', async function(req, res, next) {
       const lossMoney = (stopLossPercent/100) * isolatedMargin;
       const takeMoney = (takeProfitPercent/100) * isolatedMargin;
       let lossPrice = lastPrice + (lossMoney/newSize);
-      let takePrice = lastPrice + (takeMoney/newSize);
+      let takePrice = lastPrice - (takeMoney/newSize);
       if (data.side == 'BUY') lossPrice = lastPrice - (lossMoney/newSize);
       if (data.side == 'BUY') takePrice = lastPrice + (takeMoney/newSize);
       
