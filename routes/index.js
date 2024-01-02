@@ -394,10 +394,10 @@ router.post('/', async function(req, res, next) {
       if (data.side == 'BUY') takePrice = lastPrice + (takeMoney/newSize);
       
       let processes = [];
-      d = d.filter(x => x.closePosition);
-      if (d.length) {
+      const e = d.filter(x => x.closePosition);
+      if (e.length) {
         let p = [];
-        d.forEach(el => {
+        e.forEach(x => {
           p.push(axios.request({
             method: 'delete',
             maxBodyLength: Infinity,
@@ -407,7 +407,7 @@ router.post('/', async function(req, res, next) {
               'Authorization': 'Bearer ' + token
             },
             data : JSON.stringify({
-              "id":el.id,
+              "id":x.id,
               "symbol":data.symbol,
               "clientOrderId":"42466c03-44f3-4960-9e52-40501d2edcb0"
             })
