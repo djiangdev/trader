@@ -293,10 +293,10 @@
               if(Object.keys(data).length) {
                 data.forEach(x => {
                   var html = '<tr>';
-                  html += '<td>' + x.symbol + '</td>';
+                  html += '<td>' + x.symbol + ' x' + x.leverage + '</td>';
                   html += '<td>S: ' + Math.abs(x.size) + '<br>';
                   html += 'P: ' + Math.abs(x.entryPrice).toLocaleString('en-US') + '<br>';
-                  html += 'Vy: ' + Math.abs(x.size*x.entryPrice).toLocaleString('en-US');
+                  html += 'V: ' + Math.abs(x.size*x.entryPrice).toLocaleString('en-US');
                   html += '</td>';
                   html += '<td style="text-align: center">';
                   html += '<a href="javascript:;" onclick="closeSymbol(this, '+x.id+', \''+x.symbol+'\', '+x.size/2+')">';
