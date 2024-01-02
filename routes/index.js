@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 var axios = require('axios');
 
+const takeProfitPercent = 20; //%TP
 const stopLossPercent = 50; //%SL
 
 var data = {
@@ -386,45 +387,50 @@ router.post('/', async function(req, res, next) {
       const newSize = notional/lastPrice;
       const isolatedMargin = (newSize*lastPrice) / data.leverage;
       const lossMoney = (stopLossPercent/100) * isolatedMargin;
-      let stopPrice = lastPrice + (lossMoney/newSize);
-      if (data.side == 'BUY') stopPrice = lastPrice - (lossMoney/newSize);
+      const takeMoney = (takeProfitPercent/100) * isolatedMargin;
+      let lossPrice = lastPrice + (lossMoney/newSize);
+      let takePrice = lastPrice + (takeMoney/newSize);
+      if (data.side == 'BUY') lossPrice = lastPrice - (lossMoney/newSize);
+      if (data.side == 'BUY') takePrice = lastPrice + (takeMoney/newSize);
       
       let processes = [];
       
       if (d.length) {
-        const checkStopLossExist = d.find(x => x.symbol == data.symbol && x.type == 'STOP');
-        if (checkStopLossExist) {
-          processes.push(await axios.request({
-              method: 'delete',
-              maxBodyLength: Infinity,
-              url: 'https://api-pro.goonus.io/perpetual/v1/order',
-              headers: { 
-                'Content-Type': 'application/json', 
-                'Authorization': 'Bearer ' + token
-              },
-              data : JSON.stringify({
-                "id":checkStopLossExist.id,
-                "symbol":data.symbol,
-                "clientOrderId":"42466c03-44f3-4960-9e52-40501d2edcb0"
-              })
-            }).then((response) => {
-              return response.data;
-            }));
-        }
+        let p = [];
+        d.forEach(el => {
+          p.push(axios.request({
+            method: 'delete',
+            maxBodyLength: Infinity,
+            url: 'https://api-pro.goonus.io/perpetual/v1/order',
+            headers: { 
+              'Content-Type': 'application/json', 
+              'Authorization': 'Bearer ' + token
+            },
+            data : JSON.stringify({
+              "id":el.id,
+              "symbol":data.symbol,
+              "clientOrderId":"42466c03-44f3-4960-9e52-40501d2edcb0"
+            })
+          }).then((response) => {
+            return response.data;
+          }));
+        });
+        await Promise.all(p);
       }
 
-      processes.push(axios.request({
-        method: 'post',
-        maxBodyLength: Infinity,
-        url: 'https://api-pro.goonus.io/perpetual/v1/order',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': 'Bearer ' + token
-        },
-        data : JSON.stringify({
+      processes.push(
+        axios.request({
+          method: 'post',
+          maxBodyLength: Infinity,
+          url: 'https://api-pro.goonus.io/perpetual/v1/order',
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': 'Bearer ' + token
+          },
+          data : JSON.stringify({
           "symbol": data.symbol,
           "side": (data.side == 'BUY') ? 'SELL' : 'BUY',
-          "type": 'STOP',
+          "type": 'TAKE_PROFIT',
           "positionSide": "BOTH",
           "clientOrderId": "42466c03-44f3-4960-9e52-40501d2edcb0",
           "userId": "42466c03-44f3-4960-9e52-40501d2edcb0",
@@ -433,12 +439,39 @@ router.post('/', async function(req, res, next) {
           "reduceOnly": false,
           "closePosition": true,
           "price": 0,
-          "stopPrice": stopPrice,
+          "stopPrice": takePrice,
           "workingType": "CONTRACT_PRICE"
+          })
+        }).then((response) => {
+          return response.data;
+        }),
+        axios.request({
+          method: 'post',
+          maxBodyLength: Infinity,
+          url: 'https://api-pro.goonus.io/perpetual/v1/order',
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': 'Bearer ' + token
+          },
+          data : JSON.stringify({
+            "symbol": data.symbol,
+            "side": (data.side == 'BUY') ? 'SELL' : 'BUY',
+            "type": 'STOP',
+            "positionSide": "BOTH",
+            "clientOrderId": "42466c03-44f3-4960-9e52-40501d2edcb0",
+            "userId": "42466c03-44f3-4960-9e52-40501d2edcb0",
+            "postOnly": false,
+            "timeInForce": "GTC",
+            "reduceOnly": false,
+            "closePosition": true,
+            "price": 0,
+            "stopPrice": lossPrice,
+            "workingType": "CONTRACT_PRICE"
+          })
+        }).then((response) => {
+          return response.data;
         })
-      }).then((response) => {
-        return response.data;
-      }));
+      );
 
       await Promise.all(processes);
 
