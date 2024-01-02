@@ -330,7 +330,9 @@
         $.post("/close",
           {id, size, symbol},
           function(data, status){
-            $("#showList").trigger('click');
+            setTimeout(function() {
+              $("#showList").trigger('click');
+            }, 1000);
           }
         );
       }
