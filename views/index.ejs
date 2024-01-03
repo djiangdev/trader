@@ -35,11 +35,14 @@
         <% } %>
       </select>
       <br>
+      <input type="number" name="stop_market_price" value="" style="width: 140px; margin: 10px 0; display: none;" placeholder="Giá stop...">
       <br>
-        <button type="submit">Đặt lệnh</button>
+        <input type="hidden" name="type" value="">
+        <button id="market" type="submit" style="width: 49%;">Đặt Market</button>
+        <button id="stop_market" type="submit" style="width: 49%;">Đặt Stop Market</button>
         <br>
         <br>
-        <button id="showList" type="button" style="background-color: blueviolet;">DS Mã Lệnh</button>
+        <button id="showList" type="button" style="background-color: blueviolet;">List Kèo</button>
       <br>
       <br>
       <table class="table">
@@ -51,6 +54,16 @@
 
     <script type="text/javascript">
       $(function() {
+        $("#market").click(function() {
+          $("input[name=type]").val('MARKET');
+          $("input[name=stop_market_price]").attr('required', false).hide();
+        });
+
+        $("#stop_market").click(function() {
+          $("input[name=type]").val('STOP_MARKET');
+          $("input[name=stop_market_price]").attr('required', true).show();
+        });
+
         $("#symbol").focus(function() {
           $(this).select();
         });
