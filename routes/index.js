@@ -395,7 +395,6 @@ router.post('/', async function(req, res, next) {
       
       let processes = [];
       const e = d.filter(x => x.closePosition && x.symbol == data.symbol);
-      console.log(e);
       if (e.length) {
         let p = [];
         e.forEach(x => {
