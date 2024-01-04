@@ -433,20 +433,6 @@ router.post('/', async function(req, res, next) {
             })
           ]);
           
-          let notional = data.vol;
-          const checkNotionalExist = c.length ? c.find(x => x.symbol == data.symbol) : false;
-          if (checkNotionalExist) { 
-            notional = checkNotionalExist.notional + data.vol;
-          }
-          const newSize = notional/lastPrice;
-          const isolatedMargin = (newSize*lastPrice) / data.leverage;
-          const lossMoney = (stopLossPercent/100) * isolatedMargin;
-          const takeMoney = (takeProfitPercent/100) * isolatedMargin;
-          let lossPrice = lastPrice + (lossMoney/newSize);
-          let takePrice = lastPrice - (takeMoney/newSize);
-          if (data.side == 'BUY') lossPrice = lastPrice - (lossMoney/newSize);
-          if (data.side == 'BUY') takePrice = lastPrice + (takeMoney/newSize);
-          
           let processes = [];
           const e = d.filter(x => x.closePosition && x.symbol == data.symbol);
           if (e.length) {
@@ -471,6 +457,20 @@ router.post('/', async function(req, res, next) {
             });
             await Promise.all(p);
           }
+
+          let notional = data.vol;
+          const checkNotionalExist = c.length ? c.find(x => x.symbol == data.symbol) : false;
+          if (checkNotionalExist) { 
+            notional = checkNotionalExist.notional + data.vol;
+          }
+          const newSize = notional/lastPrice;
+          const isolatedMargin = (newSize*lastPrice) / data.leverage;
+          const lossMoney = (stopLossPercent/100) * isolatedMargin;
+          const takeMoney = (takeProfitPercent/100) * isolatedMargin;
+          let lossPrice = lastPrice + (lossMoney/newSize);
+          let takePrice = lastPrice - (takeMoney/newSize);
+          if (data.side == 'BUY') lossPrice = lastPrice - (lossMoney/newSize);
+          if (data.side == 'BUY') takePrice = lastPrice + (takeMoney/newSize);
     
           processes.push(
             axios.request({
