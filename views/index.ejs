@@ -540,7 +540,7 @@
             function(data, status){
               if(Object.keys(data).length) {
                 data.forEach(x => {
-                  const typeColor = (parseInt(x.size) > 0) ? 'green' : 'red';
+                  const typeColor = x.size > 0 ? 'green' : 'red';
                   var html = '<tr>';
                   html += '<td style="border-left: 5px solid '+ typeColor +'">' + x.symbol + ' x' + x.leverage + '</td>';
                   html += '<td>S: ' + Math.abs(x.size) + '<br>';
