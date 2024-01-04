@@ -433,7 +433,6 @@ router.post('/', async function(req, res, next) {
             })
           ]);
           
-          let processes = [];
           const e = d.filter(x => x.closePosition && x.symbol == data.symbol);
           if (e.length) {
             let p = [];
@@ -458,6 +457,7 @@ router.post('/', async function(req, res, next) {
             await Promise.all(p);
           }
 
+          let processes = [];
           let notional = data.vol;
           const checkNotionalExist = c.length ? c.find(x => x.symbol == data.symbol) : false;
           if (checkNotionalExist) { 
