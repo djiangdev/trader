@@ -24,8 +24,10 @@
       <input type="text" name="symbol" id="symbol" style="width: 140px;" value="<% if (data && data.symbol) { %><%= data.symbol %><% } %>" placeholder="Mã lệnh...">
       <select name="leverage" id="leverage" required>
         <option value="">Đòn bẩy...</option>
-        <% for(var i = 0; i < data.leverages.length; i++) { %>
-          <option value="<%= data.leverages[i] %>" <% if (data && data.leverage == data.leverages[i]) { %> selected <% } %>><%= data.leverages[i] %></option>
+        <% for(var i = 10; i <= 125; i++) { %>
+          <% if(i%5==0) { %>
+          <option value="<%= i %>" <% if (data && data.leverage == i) { %> selected <% } %>><%= i %></option>
+          <% } %>
         <% } %>
       </select>
       <select name="vol" id="" required>
@@ -520,8 +522,8 @@
             const item = tagLimits.find(x => x.indexOf(ui.item.value) != -1);
             const maxLeverage = item.split('|')[1];
             $("#leverage").html('');
-            for (var i = 0; i <= maxLeverage; i++) {
-              if (i % 5 == 0 && i >= 10) {
+            for (var i = 10; i <= maxLeverage; i++) {
+              if (i % 5 == 0) {
                 $("#leverage").append('<option value='+i+'>'+i+'</option>');
               }
             }
