@@ -444,7 +444,7 @@ router.post('/', async function(req, res, next) {
           let processes = [];
           const lossMoney = (stopLossPercent/100) * data.margin;
           const takeMoney = (takeProfitPercent/100) * data.margin;
-          let lossPrice = lastPrice + (lossMoney/size);
+          let lossPrice = lastPrice - (lossMoney/size);
           let takePrice = lastPrice - (takeMoney/size);
           if (data.side == 'BUY') lossPrice = lastPrice - (lossMoney/size);
           if (data.side == 'BUY') takePrice = lastPrice + (takeMoney/size);
