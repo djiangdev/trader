@@ -413,17 +413,33 @@ router.post('/', async function(req, res, next) {
             })
           });
     
-          const untriggered = await axios.request({
-            method: 'get',
-            maxBodyLength: Infinity,
-            url: 'https://api-pro.goonus.io/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED',
-            headers: { 
-              'Authorization': 'Bearer ' + token
-            }
-          });
+          const [c, d] = await Promise.all([
+            axios.request({
+              method: 'get',
+              maxBodyLength: Infinity,
+              url: 'https://api-pro.goonus.io/perpetual/v1/positions?status=OPEN',
+              headers: { 
+                'Authorization': 'Bearer ' + token
+              }
+            })
+            .then((response) => {
+              return response.data;
+            }),
+            axios.request({
+              method: 'get',
+              maxBodyLength: Infinity,
+              url: 'https://api-pro.goonus.io/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED',
+              headers: { 
+                'Authorization': 'Bearer ' + token
+              }
+            })
+            .then((response) => {
+              return response.data;
+            })
+          ]);
           
-          const tp = untriggered.data.find(x => x.closePosition && x.symbol == data.symbol && x.type == 'TAKE_PROFIT');
-          const sl = untriggered.data.find(x => x.closePosition && x.symbol == data.symbol && x.type == 'STOP');
+          const tp = d.find(x => x.closePosition && x.symbol == data.symbol && x.type == 'TAKE_PROFIT');
+          const sl = d.find(x => x.closePosition && x.symbol == data.symbol && x.type == 'STOP');
 
           if (tp) {
             await axios.request({
@@ -444,14 +460,17 @@ router.post('/', async function(req, res, next) {
             });
           }
 
-          let processes = [];
+          const checkOrder = c.length ? c.find(x => x.symbol == data.symbol) : false;
+          if (checkOrder) data.margin = Number(checkOrder.initialMargin) + data.margin;
           const lossMoney = (stopLossPercent/100) * data.margin;
           const takeMoney = (takeProfitPercent/100) * data.margin;
-          let lossPrice = lastPrice - (lossMoney/size);
-          let takePrice = lastPrice - (takeMoney/size);
-          if (data.side == 'BUY') lossPrice = lastPrice - (lossMoney/size);
-          if (data.side == 'BUY') takePrice = lastPrice + (takeMoney/size);
-    
+          const newSize = (data.margin*data.leverage)/lastPrice;
+          let lossPrice = lastPrice + (lossMoney/newSize);
+          let takePrice = lastPrice - (takeMoney/newSize);
+          if (data.side == 'BUY') lossPrice = lastPrice - (lossMoney/newSize);
+          if (data.side == 'BUY') takePrice = lastPrice + (takeMoney/newSize);
+
+          let processes = [];
           processes.push(
             axios.request({
               method: 'post',
