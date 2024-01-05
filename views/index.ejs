@@ -21,7 +21,7 @@
       <input type="radio" name="side" id="" value="SELL" <% if (data && data.side == "SELL") { %> checked <% } %>> <span class="sell">BÁN</span>
       <br>
       <br>
-      <input type="text" name="symbol" id="symbol" style="width: 140px;" value="<% if (data && data.symbol) { %><%= data.symbol %><% } %>" placeholder="Mã lệnh...">
+      <input type="text" name="symbol" id="symbol" style="width: 140px;" value="<% if (data && data.symbol) { %><%= data.symbol %><% } %>" placeholder="Mã VNDC...">
       <select name="leverage" id="leverage" required>
         <% for(var i = 10; i <= 125; i++) { %>
           <% if(i%5==0) { %>
