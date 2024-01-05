@@ -2,9 +2,9 @@ body {
   color: #fff;
   margin-top: 30px;
   background-color: #131c32;
-  background-image: url('../images/love.jpg');
+  background-image: url('../images/trade.jpg');
   background-size: cover;
-  background-blend-mode: darken;
+  background-blend-mode: overlay;
   font: 18px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
