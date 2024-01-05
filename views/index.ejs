@@ -585,7 +585,7 @@
         $("input[name=side][value="+side+"]").prop("checked", true);
         $("#symbol").val(symbol);
         $("#leverage").val(leverage);
-        $("#margin").val(Math.ceil(margin));
+        $("#margin").val(Math.floor(margin));
         setTimeout(function() {
           $("#market").trigger('click');
         }, 500);
