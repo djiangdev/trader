@@ -10,6 +10,11 @@ body {
 
 a {
   color: #00B7FF;
+  text-decoration: none !important;
+}
+
+a:hover {
+  text-decoration: underline !important;
 }
 
 form {
@@ -82,10 +87,19 @@ th, td {
   padding: 5px 15px;
 }
 
+td .link {
+  display: block;
+  margin: 6px 0;
+}
+
 @media only screen and (max-width: 768px) {
   form, select, textarea {
     max-width: 100% !important;
     width: 100% !important;
+  }
+
+  input[type=text], input[type=number] {
+    width: 93% !important;
   }
 
   input, select {

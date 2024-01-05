@@ -462,7 +462,7 @@ router.post('/', async function(req, res, next) {
 
           const checkOrder = c.length ? c.find(x => x.symbol == data.symbol) : false;
           if (checkOrder) data.margin = Number(checkOrder.initialMargin) + data.margin;
-          const lossMoney = (data.stop_loss == 'on' ? stopLossPercent : 95 / 100) * data.margin;
+          const lossMoney = ( (data.stop_loss == 'on' ? stopLossPercent : 95) / 100) * data.margin;
           const takeMoney = (takeProfitPercent/100) * data.margin;
           const newSize = (data.margin*data.leverage)/lastPrice;
           let lossPrice = lastPrice + (lossMoney/newSize);
@@ -600,7 +600,14 @@ router.post('/close', async function(req, res, next) {
   }
 });
 
-router.get('/1', async function(req, res, next) {
+router.post('/sld', async function(req, res, next) {
+  const id = Number(req.body.id);
+  const symbol = String(req.body.symbol);
+  const percent = Number(req.body.percent);
+  const margin = Number(req.body.margin);
+  const size = Number(req.body.size);
+  const side = String(req.body.side);
+  const entryPrice = Number(req.body.entryPrice);
   try {
     const access = await axios.request({
       method: 'get',
@@ -612,244 +619,75 @@ router.get('/1', async function(req, res, next) {
       }
     });
     const token = access.data.accessToken;
-    const list = await axios.request({
+    const valid = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: 'https://api-pro.goonus.io/perpetual/v1/exchangeInfo',
+      url: 'https://api-pro.goonus.io/perpetual/v1/ticker/24hr?symbol=' + symbol,
       headers: { 
         'Authorization': 'Bearer ' + token
       }
     });
-
-    var availableTags = [
-      "AAVEVNDC",
-      "ATOMVNDC",
-      "AVAXVNDC",
-      "BADGERVNDC",
-      "BCHVNDC",
-      "BLURVNDC",
-      "BNBVNDC",
-      "BTCVNDC",
-      "FXSVNDC",
-      "QTUMVNDC",
-      "RACA1000VNDC",
-      "RIFVNDC",
-      "SATS1000VNDC",
-      "STORJVNDC",
-      "STPTVNDC",
-      "CRVVNDC",
-      "EDUVNDC",
-      "GRTVNDC",
-      "POWRVNDC",
-      "PYTHVNDC",
-      "ETHUSDT",
-      "HFTVNDC",
-      "ALPHAVNDC",
-      "ICPVNDC",
-      "ACEVNDC",
-      "SUPERVNDC",
-      "RATS1000VNDC",
-      "NFPVNDC",
-      "QIVNDC",
-      "ARBVNDC",
-      "AUCTIONVNDC",
-      "KSMVNDC",
-      "MOVRVNDC",
-      "ARKMVNDC",
-      "DENTVNDC",
-      "ACHVNDC",
-      "CELOVNDC",
-      "DODOVNDC",
-      "GODSVNDC",
-      "JTOVNDC",
-      "KASVNDC",
-      "LOOKSVNDC",
-      "MAGICVNDC",
-      "MINAVNDC",
-      "NEOVNDC",
-      "HIGHVNDC",
-      "IOSTVNDC",
-      "JOEVNDC",
-      "LEVERVNDC",
-      "LINKVNDC",
-      "MAVVNDC",
-      "MKRVNDC",
-      "NMRVNDC",
-      "LINAUSDT",
-      "ETHWVNDC",
-      "ONEVNDC",
-      "XEMVNDC",
-      "BAKEVNDC",
-      "BNXVNDC",
-      "EGLDVNDC",
-      "COREVNDC",
-      "ETHVNDC",
-      "MBLVNDC",
-      "MEMEVNDC",
-      "NTRNVNDC",
-      "OPVNDC",
-      "POLYXVNDC",
-      "COMPVNDC",
-      "MDTVNDC",
-      "OCEANVNDC",
-      "OPUSDT",
-      "ONUSVNDC",
-      "PEPE1000VNDC",
-      "PERPVNDC",
-      "RDNTVNDC",
-      "SHIB1000VNDC",
-      "ROSEVNDC",
-      "SANDVNDC",
-      "SEIVNDC",
-      "ORDIVNDC",
-      "BONDVNDC",
-      "GLMRVNDC",
-      "ADAVNDC",
-      "AERGOVNDC",
-      "APTVNDC",
-      "SSVVNDC",
-      "NKNVNDC",
-      "RNDRVNDC",
-      "SKLVNDC",
-      "SLPVNDC",
-      "SNTVNDC",
-      "STARL1000VNDC",
-      "STEEMVNDC",
-      "STGVNDC",
-      "FLOKI1000VNDC",
-      "GALAVNDC",
-      "ADAUSDT",
-      "SOLUSDT",
-      "IOTAVNDC",
-      "HBARVNDC",
-      "SPELLVNDC",
-      "STMXVNDC",
-      "STXVNDC",
-      "SUIVNDC",
-      "LUNC1000VNDC",
-      "AXSVNDC",
-      "SNXVNDC",
-      "CETUSVNDC",
-      "TRBVNDC",
-      "RAREVNDC",
-      "STRAXVNDC",
-      "SXPVNDC",
-      "TIAVNDC",
-      "TOKENVNDC",
-      "TRXVNDC",
-      "TRUVNDC",
-      "TWTVNDC",
-      "USTCVNDC",
-      "VICVNDC",
-      "VINU1000000VNDC",
-      "TVNDC",
-      "UNFIVNDC",
-      "WLDVNDC",
-      "LINKUSDT",
-      "ONGVNDC",
-      "LPTVNDC",
-      "OGNVNDC",
-      "PENDLEVNDC",
-      "PEOPLEVNDC",
-      "UNIVNDC",
-      "WAVESVNDC",
-      "ARPAVNDC",
-      "BANDVNDC",
-      "BIGTIMEVNDC",
-      "BNBUSDT",
-      "ETCVNDC",
-      "DYDXVNDC",
-      "GASVNDC",
-      "CTKVNDC",
-      "BSVVNDC",
-      "EOSVNDC",
-      "FTMVNDC",
-      "DOTVNDC",
-      "BONK1000VNDC",
-      "ONSVNDC",
-      "AMBVNDC",
-      "APEVNDC",
-      "ARKVNDC",
-      "ATAVNDC",
-      "AUDIOVNDC",
-      "BLZVNDC",
-      "BNTVNDC",
-      "CEEKVNDC",
-      "CELVNDC",
-      "KAVAVNDC",
-      "KNCVNDC",
-      "CFXVNDC",
-      "LITVNDC",
-      "AGIXVNDC",
-      "BELVNDC",
-      "WAXPVNDC",
-      "MNAIVNDC",
-      "WOOVNDC",
-      "XRPVNDC",
-      "YFIVNDC",
-      "CTSIVNDC",
-      "BTCUSDT",
-      "COTIVNDC",
-      "ORBSVNDC",
-      "PEPE1000USDT",
-      "XRPUSDT",
-      "SOLVNDC",
-      "FILVNDC",
-      "GTCVNDC",
-      "HIFIVNDC",
-      "IDVNDC",
-      "SUSHIVNDC",
-      "XLMVNDC",
-      "ZILVNDC",
-      "API3VNDC",
-      "COMBOVNDC",
-      "ARBUSDT",
-      "ETCUSDT",
-      "SHIB1000USDT",
-      "LINAVNDC",
-      "LOOMVNDC",
-      "GMTVNDC",
-      "HOOKVNDC",
-      "ICXVNDC",
-      "KEYVNDC",
-      "LDOVNDC",
-      "LQTYVNDC",
-      "LTCVNDC",
-      "MASKVNDC",
-      "PHBVNDC",
-      "RADVNDC",
-      "RUNEVNDC",
-      "1INCHVNDC",
-      "AGLDVNDC",
-      "C98VNDC",
-      "CELRVNDC",
-      "DOGEVNDC",
-      "NEARVNDC",
-      "CHZVNDC",
-      "CYBERVNDC",
-      "DOGEUSDT",
-      "FRONTVNDC",
-      "GMXVNDC",
-      "MATICVNDC",
-      "MTLVNDC",
-      "FLMVNDC",
-      "BICOVNDC",
-      "CAKEVNDC",
-      "FETVNDC",
-      "IMXVNDC",
-      "XVSVNDC",
-      "YGGVNDC",
-      "ZRXVNDC",
-      "INJVNDC"
-    ];
-
-    let arr = [];
-    availableTags.forEach(x => {
-      const a = list.data.find(y => y.symbol == x);
-      arr.push(`${x}|${a.maxLeverage}|${a.minOrderSize}`);
+    const lastPrice = Number(valid.data.lastPrice);
+    const sldMoney = percent/100 * margin;
+    const sldPrice = entryPrice + (sldMoney/size);
+    if (side == 'BUY' && lastPrice <= sldPrice) {
+      return res.send({code: `Chưa đạt +${percent}%.`});
+    }
+    if (side == 'SELL' && lastPrice >= sldPrice) {
+      return res.send({code: `Chưa đạt +${percent}%.`});
+    }
+    const slRequest = await axios.request({
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: 'https://api-pro.goonus.io/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED&symbol='+symbol,
+      headers: { 
+        'Authorization': 'Bearer ' + token
+      }
     });
-
-    res.send(arr);
+    const sl = slRequest.data.find(x => x.closePosition && x.symbol == symbol && x.type == 'STOP');
+    if (sl) {
+      await axios.request({
+        method: 'delete',
+        maxBodyLength: Infinity,
+        url: 'https://api-pro.goonus.io/perpetual/v1/order',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': 'Bearer ' + token
+        },
+        data : JSON.stringify({
+          "id":sl.id,
+          "symbol":symbol,
+          "clientOrderId":"42466c03-44f3-4960-9e52-40501d2edcb0"
+        })
+      }).then((response) => {
+        return response.data;
+      });
+    }
+    const response = await axios.request({
+      method: 'post',
+      maxBodyLength: Infinity,
+      url: 'https://api-pro.goonus.io/perpetual/v1/order',
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Authorization': 'Bearer ' + token
+      },
+      data : JSON.stringify({
+        "symbol": symbol,
+        "side": (side == 'BUY') ? 'SELL' : 'BUY',
+        "type": 'STOP',
+        "positionSide": "BOTH",
+        "clientOrderId": "42466c03-44f3-4960-9e52-40501d2edcb0",
+        "userId": "42466c03-44f3-4960-9e52-40501d2edcb0",
+        "postOnly": false,
+        "timeInForce": "GTC",
+        "reduceOnly": false,
+        "closePosition": true,
+        "price": 0,
+        "stopPrice": sldPrice,
+        "workingType": "CONTRACT_PRICE"
+      })
+    });
+    res.send(response.data);
   } catch (error) {
     res.send(error.response.data);
   }

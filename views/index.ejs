@@ -544,18 +544,22 @@
                   const side = x.size > 0 ? 'BUY' : 'SELL';
                   var html = '<tr>';
                   html += '<td style="border-left: 5px solid '+ typeColor +'">' + x.symbol + ' x' + x.leverage + '</td>';
-                  html += '<td>S: ' + Math.abs(x.size) + '<br>';
-                  html += 'P: ' + Math.abs(x.entryPrice).toLocaleString('en-US') + '<br>';
-                  html += 'V: ' + Math.abs(x.size*x.entryPrice).toLocaleString('en-US');
+                  html += '<td>';
+                  html += 'S=' + Math.abs(x.size) + '<br>';
+                  html += 'P=' + Math.abs(x.entryPrice).toLocaleString('en-US') + '<br>';
+                  html += 'V=' + Math.abs(x.size*x.entryPrice).toLocaleString('en-US');
                   html += '</td>';
                   html += '<td style="text-align: center">';
-                  html += '<a href="javascript:;" onclick="dcaSymbol(\''+side+'\', \''+x.symbol+'\', '+x.leverage+', '+x.initialMargin+')">DCA</a>';
+                  html += '<a href="javascript:;" onclick="dcaSymbol(\''+side+'\', \''+x.symbol+'\', '+x.leverage+', '+x.initialMargin+')" class="link">DCA1-1</a>';
+                  html += '<a href="javascript:;" onclick="dcaSymbol(\''+side+'\', \''+x.symbol+'\', '+x.leverage+', '+x.initialMargin*2+')" class="link">DCA1-2</a>';
                   html += '</td>';
                   html += '<td style="text-align: center">';
-                  html += '<a href="javascript:;" onclick="closeSymbol('+x.id+', \''+x.symbol+'\', '+x.size/2+')">Chốt 50%</a>';
+                  html += '<a href="javascript:;" onclick="sldSymbol('+x.id+', \''+x.symbol+'\', 10, '+x.initialMargin+', '+x.size+', \''+side+'\', '+x.entryPrice+')" class="link">SLd 10%</a>';
+                  html += '<a href="javascript:;" onclick="sldSymbol('+x.id+', \''+x.symbol+'\', 20, '+x.initialMargin+', '+x.size+', \''+side+'\', '+x.entryPrice+')" class="link">SLd 20%</a>';
                   html += '</td>';
                   html += '<td style="text-align: center">';
-                  html += '<a href="javascript:;" onclick="closeSymbol('+x.id+', \''+x.symbol+'\', '+x.size+')">Đóng</a>';
+                  html += '<a href="javascript:;" onclick="closeSymbol('+x.id+', \''+x.symbol+'\', '+x.size/2+')" class="link">Đóng 50%</a>';
+                  html += '<a href="javascript:;" onclick="closeSymbol('+x.id+', \''+x.symbol+'\', '+x.size+')" class="link">Đóng 100%</a>';
                   html += '</td>';
                   html += '</tr>';
                   $("table tbody").append(html);
@@ -592,6 +596,19 @@
         setTimeout(function() {
           $("#market").trigger('click');
         }, 500);
+      }
+
+      function sldSymbol(id, symbol, percent, margin, size, side, entryPrice) {
+        $.post("/sld",
+          {id, symbol, percent, margin, size, side, entryPrice},
+          function(data, status){
+            if (data.code) {
+              alert(`Lưu ý: ${data.code}`);
+            } else {
+              alert(`Thành công! Đã cài SL +${percent}%.`);
+            }
+          }
+        );
       }
     </script>
   </body>
