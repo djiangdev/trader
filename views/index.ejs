@@ -23,28 +23,22 @@
       <br>
       <input type="text" name="symbol" id="symbol" style="width: 140px;" value="<% if (data && data.symbol) { %><%= data.symbol %><% } %>" placeholder="Mã lệnh...">
       <select name="leverage" id="leverage" required>
-        <option value="">Đòn bẩy...</option>
         <% for(var i = 10; i <= 125; i++) { %>
           <% if(i%5==0) { %>
           <option value="<%= i %>" <% if (data && data.leverage == i) { %> selected <% } %>><%= i %></option>
           <% } %>
         <% } %>
       </select>
-      <select name="vol" id="" required>
-        <option value="">Khối lượng...</option>
-        <% for(var i = 0; i < data.vols.length; i++) { %>
-          <option value="<%= data.vols[i] %>" <% if (data && data.vol == data.vols[i]) { %> selected <% } %>><%= data.vols[i].toLocaleString('en-US') %> VNDC</option>
-        <% } %>
-      </select>
+      <input type="number" name="margin" style="width: 140px;" value="<% if (data && data.margin) { %><%= data.margin %><% } %>" placeholder="Ký quỹ..." required>
       <br>
       <input type="number" name="stop_market_price" value="" style="width: 140px; display: none;" placeholder="Giá stop...">
       <br>
-        <input type="hidden" name="type" value="">
-        <button id="market" type="submit" style="width: 49%;">Đặt Market</button>
-        <button id="stop_market" type="submit" style="width: 49%;">Đặt Stop Market</button>
-        <br>
-        <br>
-        <button id="showList" type="button" style="background-color: blueviolet;">DS vị thế</button>
+      <input type="hidden" name="type" value="">
+      <button id="market" type="submit" style="width: 49%;">Đặt Market</button>
+      <button id="stop_market" type="submit" style="width: 49%;">Đặt Stop Market</button>
+      <br>
+      <br>
+      <button id="showList" type="button" style="background-color: blueviolet;">DS vị thế</button>
       <br>
       <br>
       <table class="table">
