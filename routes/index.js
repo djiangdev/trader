@@ -285,50 +285,51 @@ router.post('/', async function(req, res, next) {
   data.cookie = req.body.cookie ? String(req.body.cookie) : data.cookie;
   data.type = String(req.body.type);
   data.stop_market_price = Number(req.body.stop_market_price);
+
+  const access = await axios.request({
+    method: 'get',
+    maxBodyLength: Infinity,
+    url: 'https://pro.goonus.io/api/auth/session',
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: data.cookie
+    }
+  });
+  const token = access.data.accessToken;
+
+  const [a, b] = await Promise.all([
+    axios.request({
+      method: 'post',
+      maxBodyLength: Infinity,
+      url: 'https://api-pro.goonus.io/perpetual/v1/leverage',
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Authorization': 'Bearer ' + token
+      },
+      data : JSON.stringify({
+        "symbol": data.symbol,
+        "leverage": data.leverage
+      })
+    })
+    .then((response) => {
+      return response.data;
+    }),
+    axios.request({
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: 'https://api-pro.goonus.io/perpetual/v1/ticker/24hr?symbol=' + data.symbol,
+      headers: { 
+        'Authorization': 'Bearer ' + token
+      }
+    })
+    .then((response) => {
+      return response.data;
+    })
+  ]);
+
+  const lastPrice = Number(b.lastPrice);
   
   try{
-      const access = await axios.request({
-        method: 'get',
-        maxBodyLength: Infinity,
-        url: 'https://pro.goonus.io/api/auth/session',
-        headers: {
-          "Content-Type": "application/json",
-          Cookie: data.cookie
-        }
-      });
-
-      const token = access.data.accessToken;
-
-      const [a, b] = await Promise.all([
-        axios.request({
-          method: 'post',
-          maxBodyLength: Infinity,
-          url: 'https://api-pro.goonus.io/perpetual/v1/leverage',
-          headers: { 
-            'Content-Type': 'application/json', 
-            'Authorization': 'Bearer ' + token
-          },
-          data : JSON.stringify({
-            "symbol": data.symbol,
-            "leverage": data.leverage
-          })
-        })
-        .then((response) => {
-          return response.data;
-        }),
-        axios.request({
-          method: 'get',
-          maxBodyLength: Infinity,
-          url: 'https://api-pro.goonus.io/perpetual/v1/ticker/24hr?symbol=' + data.symbol,
-          headers: { 
-            'Authorization': 'Bearer ' + token
-          }
-        })
-        .then((response) => {
-          return response.data;
-        })
-      ]);
-
       if(data.type == 'STOP_MARKET') {
         const size = (data.margin*data.leverage)/data.stop_market_price;
         try {
@@ -383,7 +384,6 @@ router.post('/', async function(req, res, next) {
           });
         }
       } else {
-          const lastPrice = Number(b.lastPrice);
           const size = (data.margin*data.leverage)/lastPrice;
 
           const order = await axios.request({
@@ -517,6 +517,19 @@ router.post('/', async function(req, res, next) {
   }
   catch(error){
       console.log(error.response);
+      if (error.response.data && error.response.data.code == 'order_less_than_min_size') {
+        const exchangeInfo = await axios.request({
+          method: 'get',
+          maxBodyLength: Infinity,
+          url: 'https://api-pro.goonus.io/perpetual/v1/exchangeInfo',
+          headers: { 
+            'Authorization': 'Bearer ' + token
+          }
+        });
+        const minOrderSize = (exchangeInfo.data.find(x => x.symbol == data.symbol)).minOrderSize;
+        const minMargin = (minOrderSize*lastPrice)/data.leverage;
+        error.response.data.code = `Ký quỹ tối thiểu ${minMargin.toLocaleString('en-US')} VNDC`;
+      }
       data.error = error.response.data.message || error.response.data.code;
       data.success = '';
   }
