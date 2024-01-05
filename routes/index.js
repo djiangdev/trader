@@ -285,6 +285,7 @@ router.post('/', async function(req, res, next) {
   data.cookie = req.body.cookie ? String(req.body.cookie) : data.cookie;
   data.type = String(req.body.type);
   data.stop_market_price = Number(req.body.stop_market_price);
+  data.stop_loss = String(req.body.stop_loss);
 
   const access = await axios.request({
     method: 'get',
@@ -439,7 +440,6 @@ router.post('/', async function(req, res, next) {
           ]);
           
           const tp = d.find(x => x.closePosition && x.symbol == data.symbol && x.type == 'TAKE_PROFIT');
-          const sl = d.find(x => x.closePosition && x.symbol == data.symbol && x.type == 'STOP');
 
           if (tp) {
             await axios.request({
@@ -471,6 +471,7 @@ router.post('/', async function(req, res, next) {
           if (data.side == 'BUY') takePrice = lastPrice + (takeMoney/newSize);
 
           let processes = [];
+
           processes.push(
             axios.request({
               method: 'post',
@@ -500,7 +501,9 @@ router.post('/', async function(req, res, next) {
             })
           );
 
-          if(!sl) {
+          const sl = d.find(x => x.closePosition && x.symbol == data.symbol && x.type == 'STOP');
+          
+          if(data.stop_loss == 'on' && !sl) {
             processes.push(
               axios.request({
                 method: 'post',

@@ -33,6 +33,9 @@
       <br>
       <input type="number" name="stop_market_price" value="" style="width: 140px; display: none;" placeholder="Giá stop...">
       <br>
+      <input type="checkbox" name="stop_loss" id="stop_loss" <% if (data && data.stop_loss != 'undefined') { %> checked <% } %>> Bật SL
+      <br>
+      <br>
       <input type="hidden" name="type" value="<% if (data && data.type) { %><%= data.type %><% } %>">
       <input type="hidden" name="min_size" id="min_size" value="<% if (data && data.min_size) { %><%= data.min_size %><% } %>">
       <button id="market" type="submit" style="width: 49%;">Đặt Market</button>
