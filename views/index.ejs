@@ -29,7 +29,7 @@
           <% } %>
         <% } %>
       </select>
-      <input type="number" name="margin" style="width: 140px;" value="<% if (data && data.margin) { %><%= data.margin %><% } %>" placeholder="Ký quỹ..." required>
+      <input type="number" name="margin" id="margin" style="width: 140px;" value="<% if (data && data.margin) { %><%= data.margin %><% } %>" placeholder="Ký quỹ..." required>
       <br>
       <input type="number" name="stop_market_price" value="" style="width: 140px; display: none;" placeholder="Giá stop...">
       <br>
@@ -538,6 +538,7 @@
               if(Object.keys(data).length) {
                 data.forEach(x => {
                   const typeColor = x.size > 0 ? 'green' : 'red';
+                  const side = x.size > 0 ? 'BUY' : 'SELL';
                   var html = '<tr>';
                   html += '<td style="border-left: 5px solid '+ typeColor +'">' + x.symbol + ' x' + x.leverage + '</td>';
                   html += '<td>S: ' + Math.abs(x.size) + '<br>';
@@ -545,14 +546,13 @@
                   html += 'V: ' + Math.abs(x.size*x.entryPrice).toLocaleString('en-US');
                   html += '</td>';
                   html += '<td style="text-align: center">';
-                  html += '<a href="javascript:;" onclick="closeSymbol(this, '+x.id+', \''+x.symbol+'\', '+x.size/2+')">';
-                  html += 'Đóng 50%';
-                  html += '</a>';
+                  html += '<a href="javascript:;" onclick="dcaSymbol(\''+side+'\', \''+x.symbol+'\', '+x.leverage+', '+x.initialMargin+')">DCA</a>';
                   html += '</td>';
                   html += '<td style="text-align: center">';
-                  html += '<a href="javascript:;" onclick="closeSymbol(this, '+x.id+', \''+x.symbol+'\', '+x.size+')">';
-                  html += 'Đóng 100%';
-                  html += '</a>';
+                  html += '<a href="javascript:;" onclick="closeSymbol('+x.id+', \''+x.symbol+'\', '+x.size/2+')">Chốt 50%</a>';
+                  html += '</td>';
+                  html += '<td style="text-align: center">';
+                  html += '<a href="javascript:;" onclick="closeSymbol('+x.id+', \''+x.symbol+'\', '+x.size+')">Đóng</a>';
                   html += '</td>';
                   html += '</tr>';
                   $("table tbody").append(html);
@@ -569,7 +569,7 @@
         }, 2000);
       });
 
-      function closeSymbol(el, id, symbol, size) {
+      function closeSymbol(id, symbol, size) {
         $("table tbody").html('');
         $.post("/close",
           {id, size, symbol},
@@ -579,6 +579,16 @@
             }, 2000);
           }
         );
+      }
+
+      function dcaSymbol(side, symbol, leverage, margin) {
+        $("input[name=side][value="+side+"]").prop("checked", true);
+        $("#symbol").val(symbol);
+        $("#leverage").val(leverage);
+        $("#margin").val(Math.ceil(margin));
+        setTimeout(function() {
+          $("#market").trigger('click');
+        }, 500);
       }
     </script>
   </body>

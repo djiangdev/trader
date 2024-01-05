@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
-const takeProfitPercent = 20; //%TP
+const takeProfitPercent = 30; //%TP
 const stopLossPercent = 50; //%SL
 
 let data = {
