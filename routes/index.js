@@ -462,7 +462,7 @@ router.post('/', async function(req, res, next) {
 
           const checkOrder = c.length ? c.find(x => x.symbol == data.symbol) : false;
           if (checkOrder) data.margin = Number(checkOrder.initialMargin) + data.margin;
-          const lossMoney = (stopLossPercent/100) * data.margin;
+          const lossMoney = (data.stop_loss == 'on' ? stopLossPercent : 95 / 100) * data.margin;
           const takeMoney = (takeProfitPercent/100) * data.margin;
           const newSize = (data.margin*data.leverage)/lastPrice;
           let lossPrice = lastPrice + (lossMoney/newSize);
@@ -502,8 +502,8 @@ router.post('/', async function(req, res, next) {
           );
 
           const sl = d.find(x => x.closePosition && x.symbol == data.symbol && x.type == 'STOP');
-          
-          if(data.stop_loss == 'on' && !sl) {
+
+          if(!sl) {
             processes.push(
               axios.request({
                 method: 'post',
