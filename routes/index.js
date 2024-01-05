@@ -280,7 +280,7 @@ router.post('/', async function(req, res, next) {
   data.side = String(req.body.side);
   data.symbol = String(req.body.symbol);
   data.leverage = Number(req.body.leverage);
-  data.vol = Number(req.body.vol);
+  data.min_size = Number(req.body.min_size);
   data.margin = Number(req.body.margin);
   data.cookie = req.body.cookie ? String(req.body.cookie) : data.cookie;
   data.type = String(req.body.type);
@@ -371,7 +371,7 @@ router.post('/', async function(req, res, next) {
               "side": data.side,
               "type": "TAKE_PROFIT",
               "positionSide": "BOTH",
-              "size": data.vol/data.stop_market_price,
+              "size": size,
               "clientOrderId": "42466c03-44f3-4960-9e52-40501d2edcb0",
               "userId": "42466c03-44f3-4960-9e52-40501d2edcb0",
               "postOnly": false,
@@ -518,16 +518,8 @@ router.post('/', async function(req, res, next) {
   catch(error){
       console.log(error.response);
       if (error.response.data && error.response.data.code == 'order_less_than_min_size') {
-        const exchangeInfo = await axios.request({
-          method: 'get',
-          maxBodyLength: Infinity,
-          url: 'https://api-pro.goonus.io/perpetual/v1/exchangeInfo',
-          headers: { 
-            'Authorization': 'Bearer ' + token
-          }
-        });
-        const minOrderSize = (exchangeInfo.data.find(x => x.symbol == data.symbol)).minOrderSize;
-        const minMargin = (minOrderSize*lastPrice)/data.leverage;
+        console.log(data.min_size);
+        const minMargin = (data.min_size*lastPrice)/data.leverage;
         error.response.data.code = `Ký quỹ tối thiểu ${minMargin.toLocaleString('en-US')} VNDC`;
       }
       data.error = error.response.data.message || error.response.data.code;
@@ -578,6 +570,261 @@ router.post('/close', async function(req, res, next) {
       })
     });
     res.send(response.data);
+  } catch (error) {
+    res.send(error.response.data);
+  }
+});
+
+router.get('/1', async function(req, res, next) {
+  try {
+    const access = await axios.request({
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: 'https://pro.goonus.io/api/auth/session',
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: data.cookie
+      }
+    });
+    const token = access.data.accessToken;
+    const list = await axios.request({
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: 'https://api-pro.goonus.io/perpetual/v1/exchangeInfo',
+      headers: { 
+        'Authorization': 'Bearer ' + token
+      }
+    });
+
+    var availableTags = [
+      "AAVEVNDC",
+      "ATOMVNDC",
+      "AVAXVNDC",
+      "BADGERVNDC",
+      "BCHVNDC",
+      "BLURVNDC",
+      "BNBVNDC",
+      "BTCVNDC",
+      "FXSVNDC",
+      "QTUMVNDC",
+      "RACA1000VNDC",
+      "RIFVNDC",
+      "SATS1000VNDC",
+      "STORJVNDC",
+      "STPTVNDC",
+      "CRVVNDC",
+      "EDUVNDC",
+      "GRTVNDC",
+      "POWRVNDC",
+      "PYTHVNDC",
+      "ETHUSDT",
+      "HFTVNDC",
+      "ALPHAVNDC",
+      "ICPVNDC",
+      "ACEVNDC",
+      "SUPERVNDC",
+      "RATS1000VNDC",
+      "NFPVNDC",
+      "QIVNDC",
+      "ARBVNDC",
+      "AUCTIONVNDC",
+      "KSMVNDC",
+      "MOVRVNDC",
+      "ARKMVNDC",
+      "DENTVNDC",
+      "ACHVNDC",
+      "CELOVNDC",
+      "DODOVNDC",
+      "GODSVNDC",
+      "JTOVNDC",
+      "KASVNDC",
+      "LOOKSVNDC",
+      "MAGICVNDC",
+      "MINAVNDC",
+      "NEOVNDC",
+      "HIGHVNDC",
+      "IOSTVNDC",
+      "JOEVNDC",
+      "LEVERVNDC",
+      "LINKVNDC",
+      "MAVVNDC",
+      "MKRVNDC",
+      "NMRVNDC",
+      "LINAUSDT",
+      "ETHWVNDC",
+      "ONEVNDC",
+      "XEMVNDC",
+      "BAKEVNDC",
+      "BNXVNDC",
+      "EGLDVNDC",
+      "COREVNDC",
+      "ETHVNDC",
+      "MBLVNDC",
+      "MEMEVNDC",
+      "NTRNVNDC",
+      "OPVNDC",
+      "POLYXVNDC",
+      "COMPVNDC",
+      "MDTVNDC",
+      "OCEANVNDC",
+      "OPUSDT",
+      "ONUSVNDC",
+      "PEPE1000VNDC",
+      "PERPVNDC",
+      "RDNTVNDC",
+      "SHIB1000VNDC",
+      "ROSEVNDC",
+      "SANDVNDC",
+      "SEIVNDC",
+      "ORDIVNDC",
+      "BONDVNDC",
+      "GLMRVNDC",
+      "ADAVNDC",
+      "AERGOVNDC",
+      "APTVNDC",
+      "SSVVNDC",
+      "NKNVNDC",
+      "RNDRVNDC",
+      "SKLVNDC",
+      "SLPVNDC",
+      "SNTVNDC",
+      "STARL1000VNDC",
+      "STEEMVNDC",
+      "STGVNDC",
+      "FLOKI1000VNDC",
+      "GALAVNDC",
+      "ADAUSDT",
+      "SOLUSDT",
+      "IOTAVNDC",
+      "HBARVNDC",
+      "SPELLVNDC",
+      "STMXVNDC",
+      "STXVNDC",
+      "SUIVNDC",
+      "LUNC1000VNDC",
+      "AXSVNDC",
+      "SNXVNDC",
+      "CETUSVNDC",
+      "TRBVNDC",
+      "RAREVNDC",
+      "STRAXVNDC",
+      "SXPVNDC",
+      "TIAVNDC",
+      "TOKENVNDC",
+      "TRXVNDC",
+      "TRUVNDC",
+      "TWTVNDC",
+      "USTCVNDC",
+      "VICVNDC",
+      "VINU1000000VNDC",
+      "TVNDC",
+      "UNFIVNDC",
+      "WLDVNDC",
+      "LINKUSDT",
+      "ONGVNDC",
+      "LPTVNDC",
+      "OGNVNDC",
+      "PENDLEVNDC",
+      "PEOPLEVNDC",
+      "UNIVNDC",
+      "WAVESVNDC",
+      "ARPAVNDC",
+      "BANDVNDC",
+      "BIGTIMEVNDC",
+      "BNBUSDT",
+      "ETCVNDC",
+      "DYDXVNDC",
+      "GASVNDC",
+      "CTKVNDC",
+      "BSVVNDC",
+      "EOSVNDC",
+      "FTMVNDC",
+      "DOTVNDC",
+      "BONK1000VNDC",
+      "ONSVNDC",
+      "AMBVNDC",
+      "APEVNDC",
+      "ARKVNDC",
+      "ATAVNDC",
+      "AUDIOVNDC",
+      "BLZVNDC",
+      "BNTVNDC",
+      "CEEKVNDC",
+      "CELVNDC",
+      "KAVAVNDC",
+      "KNCVNDC",
+      "CFXVNDC",
+      "LITVNDC",
+      "AGIXVNDC",
+      "BELVNDC",
+      "WAXPVNDC",
+      "MNAIVNDC",
+      "WOOVNDC",
+      "XRPVNDC",
+      "YFIVNDC",
+      "CTSIVNDC",
+      "BTCUSDT",
+      "COTIVNDC",
+      "ORBSVNDC",
+      "PEPE1000USDT",
+      "XRPUSDT",
+      "SOLVNDC",
+      "FILVNDC",
+      "GTCVNDC",
+      "HIFIVNDC",
+      "IDVNDC",
+      "SUSHIVNDC",
+      "XLMVNDC",
+      "ZILVNDC",
+      "API3VNDC",
+      "COMBOVNDC",
+      "ARBUSDT",
+      "ETCUSDT",
+      "SHIB1000USDT",
+      "LINAVNDC",
+      "LOOMVNDC",
+      "GMTVNDC",
+      "HOOKVNDC",
+      "ICXVNDC",
+      "KEYVNDC",
+      "LDOVNDC",
+      "LQTYVNDC",
+      "LTCVNDC",
+      "MASKVNDC",
+      "PHBVNDC",
+      "RADVNDC",
+      "RUNEVNDC",
+      "1INCHVNDC",
+      "AGLDVNDC",
+      "C98VNDC",
+      "CELRVNDC",
+      "DOGEVNDC",
+      "NEARVNDC",
+      "CHZVNDC",
+      "CYBERVNDC",
+      "DOGEUSDT",
+      "FRONTVNDC",
+      "GMXVNDC",
+      "MATICVNDC",
+      "MTLVNDC",
+      "FLMVNDC",
+      "BICOVNDC",
+      "CAKEVNDC",
+      "FETVNDC",
+      "IMXVNDC",
+      "XVSVNDC",
+      "YGGVNDC",
+      "ZRXVNDC",
+      "INJVNDC"
+    ];
+
+    let arr = [];
+    availableTags.forEach(x => {
+      const a = list.data.find(y => y.symbol == x);
+      arr.push(`${x}|${a.maxLeverage}|${a.minOrderSize}`);
+    });
+
+    res.send(arr);
   } catch (error) {
     res.send(error.response.data);
   }
