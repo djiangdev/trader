@@ -286,7 +286,7 @@ router.post('/', async function(req, res, next) {
   data.cookie = req.body.cookie ? String(req.body.cookie) : data.cookie;
   data.type = String(req.body.type);
   data.stop_market_price = Number(req.body.stop_market_price);
-  data.stop_loss = String(req.body.stop_loss);
+  data.stop_loss = req.body.stop_loss ? true : false;
   if (req.query.tp) data.tp = Number(req.query.tp);
   if (req.query.sl) data.sl = Number(req.query.sl);
 
@@ -465,7 +465,7 @@ router.post('/', async function(req, res, next) {
 
           const checkOrder = c.length ? c.find(x => x.symbol == data.symbol) : false;
           if (checkOrder) data.margin = Number(checkOrder.initialMargin) + data.margin;
-          const lossMoney = ( (data.stop_loss == 'on' ? data.sl : 95) / 100) * data.margin;
+          const lossMoney = ( (data.stop_loss ? data.sl : 95) / 100) * data.margin;
           const takeMoney = (data.tp/100) * data.margin;
           const newSize = (data.margin*data.leverage)/lastPrice;
           let lossPrice = lastPrice + (lossMoney/newSize);
@@ -506,7 +506,7 @@ router.post('/', async function(req, res, next) {
 
           const sl = d.find(x => x.closePosition && x.symbol == data.symbol && x.type == 'STOP');
 
-          if(!sl) {
+          if(!sl && data.stop_loss) {
             processes.push(
               axios.request({
                 method: 'post',
@@ -536,6 +536,26 @@ router.post('/', async function(req, res, next) {
               })
             );
           }
+
+          if (sl && !data.stop_loss) {
+            processes.push(axios.request({
+                method: 'delete',
+                maxBodyLength: Infinity,
+                url: 'https://api-pro.goonus.io/perpetual/v1/order',
+                headers: { 
+                  'Content-Type': 'application/json', 
+                  'Authorization': 'Bearer ' + token
+                },
+                data : JSON.stringify({
+                  "id":sl.id,
+                  "symbol":sl.symbol,
+                  "clientOrderId":"42466c03-44f3-4960-9e52-40501d2edcb0"
+                })
+              }).then((response) => {
+                return response.data;
+              })
+            );
+          }
     
           await Promise.all(processes);
       }
@@ -546,7 +566,6 @@ router.post('/', async function(req, res, next) {
   catch(error){
       console.log(error.response);
       if (error.response.data && error.response.data.code == 'order_less_than_min_size') {
-        console.log(data.min_size);
         const minMargin = (data.min_size*lastPrice)/data.leverage;
         error.response.data.code = `Ký quỹ tối thiểu ${minMargin.toLocaleString('en-US')} VNDC`;
       }
