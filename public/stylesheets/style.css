@@ -4,7 +4,7 @@ body {
   background-color: #131c32;
   background-image: url('../images/trade.jpg');
   background-size: cover;
-  background-blend-mode: overlay;
+  background-blend-mode: multiply;
   background-position: center center;
   font: 18px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
@@ -91,6 +91,7 @@ th, td {
 td .link {
   display: block;
   margin: 6px 0;
+  text-wrap: nowrap;
 }
 
 @media only screen and (max-width: 768px) {
