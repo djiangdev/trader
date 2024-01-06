@@ -5,6 +5,7 @@ body {
   background-image: url('../images/trade.jpg');
   background-size: cover;
   background-blend-mode: overlay;
+  background-position: center center;
   font: 18px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
