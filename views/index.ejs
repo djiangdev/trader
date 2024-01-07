@@ -42,16 +42,22 @@
       <button id="stop_market" type="submit" style="width: 49%;">Đặt Stop Market</button>
       <br>
       <br>
-      <button id="showList" type="button" style="background-color: blueviolet;">DS vị thế</button>
-      <br>
-      <br>
-      <table class="table">
+      <button id="showList" type="button" style="background-color: rgb(30, 141, 35); display: block; margin: 0 auto; width: auto;">Danh sách lệnh</button>
+      <table id="showListTable" class="table">
         <tbody>
         </tbody>
+        <tfoot>
+        </tfoot>
+      </table>
+      <button id="showHistory" type="button" style="background-color:rgb(54, 54, 54); display: block; margin: 0 auto; width: auto;">Lịch sử biến động</button>
+      <table id="showHistoryTable" class="table">
+        <tbody>
+        </tbody>
+        <tfoot>
+        </tfoot>
       </table>
       <textarea name="cookie" rows="3" placeholder="Cookie..."><% if (data && data.cookie) { %><%= data.cookie %><% } %></textarea>
     </form>
-
     <script type="text/javascript">
       $(function() {
         $("#market").click(function() {
@@ -535,15 +541,16 @@
         });
 
         $("#showList").click(function() {
-          $("table tbody").html('');
+          $("#showListTable tbody, #showListTable tfoot").html('');
           $.get("/list",
             function(data, status){
               if(Object.keys(data).length) {
                 data.forEach(x => {
+                  const plitSymbol = x.symbol.split('VNDC');
                   const typeColor = x.size > 0 ? 'green' : 'red';
                   const side = x.size > 0 ? 'BUY' : 'SELL';
                   var html = '<tr>';
-                  html += '<td style="border-left: 5px solid '+ typeColor +'">' + x.symbol + ' x' + x.leverage + '</td>';
+                  html += '<td style="border-left: 5px solid '+ typeColor +'"><a href="https://pro.goonus.io/futures/'+plitSymbol[0]+'_VNDC" target="_blank">' + x.symbol + '</a> x' + x.leverage + '</td>';
                   html += '<td>';
                   html += 'S=' + Math.abs(x.size) + '<br>';
                   html += 'P=' + Math.abs(x.entryPrice).toLocaleString('en-US') + '<br>';
@@ -562,22 +569,55 @@
                   html += '<a href="javascript:;" onclick="closeSymbol('+x.id+', \''+x.symbol+'\', '+x.size+')" class="link">Đóng 100%</a>';
                   html += '</td>';
                   html += '</tr>';
-                  $("table tbody").append(html);
+                  $("#showListTable tbody").append(html);
                 });
               } else {
-                $("table tbody").html('Bạn không có vị thế nào');
+                $("#showListTable tfoot").html('Bạn không có vị thế nào');
               }
             }
           );
         });
-        
+
+        $("#showHistory").click(function() {
+          $("#showHistoryTable tbody, #showHistoryTable tfoot").html('');
+          $.get("/history",
+            function(data, status){
+              if(Object.keys(data).length) {
+                var totalAmount = 0;
+                data.forEach(x => {
+                  const plitSymbol = x.symbol.split('VNDC');
+                  const time = (new Date(x.created)).toLocaleDateString() + ' '+ (new Date(x.created)).toLocaleTimeString();
+                  const amountColor = x.amount > 0 ? 'green' : 'red';
+                  const amount = x.amount > 0 ? '+' + x.amount : x.amount;
+                  totalAmount += parseFloat(x.amount);
+                  var html = '<tr>';
+                  html += '<td>' + time + '</td>';
+                  html += '<td style="text-align: center"><a href="https://pro.goonus.io/futures/'+plitSymbol[0]+'_VNDC" target="_blank">' + x.symbol + '</a></td>';
+                  html += '<td class="amount" style="color: '+ amountColor +'">' + parseInt(amount).toLocaleString('en') + ' '+ x.asset +'</td>';
+                  html += '</tr>';
+                  $("#showHistoryTable tbody").append(html);
+                });
+                const totalAmountColor = totalAmount > 0 ? 'green' : 'red';
+                var html = '<tr>';
+                  html += '<td colspan="2">Lãi lỗ</td>';
+                  html += '<td class="amount" style="color: '+ totalAmountColor +'">' + parseInt(totalAmount).toLocaleString('en') + ' VNDC</td>';
+                  html += '</tr>';
+                $("#showHistoryTable tfoot").html(html);
+              } else {
+                $("#showHistoryTable tfoot").html('Bạn không có biến động nào');
+              }
+            }
+          );
+        });
+
         setTimeout(function() {
           $("#showList").trigger('click');
+          $("#showHistory").trigger('click');
         }, 2000);
       });
 
       function closeSymbol(id, symbol, size) {
-        $("table tbody").html('');
+        $("#showListTable tbody").html('');
         $.post("/close",
           {id, size, symbol},
           function(data, status){

@@ -277,6 +277,38 @@ router.get('/list', async function(req, res, next) {
   }
 });
 
+router.get('/history', async function(req, res, next) {
+  try {
+    const access = await axios.request({
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: 'https://pro.goonus.io/api/auth/session',
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: data.cookie
+      }
+    });
+    const token = access.data.accessToken;
+    let start = new Date();
+    start.setUTCHours(0,0,0,0);
+    start = new Date(start.toUTCString()).getTime();
+    let end = new Date();
+    end.setUTCHours(23,59,59,999);
+    end = new Date(end.toUTCString()).getTime();
+    const list = await axios.request({
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: 'https://api-pro.goonus.io/perpetual/v1/history/transactions?type=PNL&startTime='+start+'&endTime='+end,
+      headers: { 
+        'Authorization': 'Bearer ' + token
+      }
+    });
+    res.send(list.data);
+  } catch (error) {
+    res.send(error.response.data);
+  }
+});
+
 router.post('/', async function(req, res, next) {
   data.side = String(req.body.side);
   data.symbol = String(req.body.symbol);

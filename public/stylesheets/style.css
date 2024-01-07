@@ -35,12 +35,12 @@ select {
 
 textarea {
   width: 94%;
-  background-color: darkslategrey;
+  background-color: rgb(106, 106, 107);
 }
 
 button {
   color: #fff;
-  background-color: #00B7FF;
+  background-color: #0443b8;
   border: 0 !important;
   width: 100%;
   cursor: pointer;
@@ -83,6 +83,10 @@ table {
   border-spacing: 0 10px;
 }
 
+table tfoot {
+  text-align: center;
+}
+
 th, td {
   border: 1px solid #fff;
   padding: 5px 15px;
@@ -92,6 +96,11 @@ td .link {
   display: block;
   margin: 6px 0;
   text-wrap: nowrap;
+}
+
+table .amount {
+  font-weight: bold; 
+  text-align: right;
 }
 
 @media only screen and (max-width: 768px) {
