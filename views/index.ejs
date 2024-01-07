@@ -586,7 +586,7 @@
                 var totalAmount = 0;
                 data.forEach(x => {
                   const plitSymbol = x.symbol.split('VNDC');
-                  const time = (new Date(x.created)).toLocaleDateString() + ' '+ (new Date(x.created)).toLocaleTimeString();
+                  const time = (new Date(x.created)).toLocaleTimeString() + ' ' + (new Date(x.created)).toLocaleDateString();
                   const amountColor = x.amount > 0 ? 'green' : 'red';
                   const amount = x.amount > 0 ? '+' + x.amount : x.amount;
                   totalAmount += parseFloat(x.amount);
@@ -600,7 +600,7 @@
                 const totalAmountColor = totalAmount > 0 ? 'green' : 'red';
                 var html = '<tr>';
                   html += '<td colspan="2"></td>';
-                  html += '<td class="amount" style="color: '+ totalAmountColor +'">' + parseInt(totalAmount).toLocaleString('en') + ' VNDC</td>';
+                  html += '<td class="amount" style="color: '+ totalAmountColor +'; text-wrap: nowrap;">' + parseInt(totalAmount).toLocaleString('en') + ' VNDC</td>';
                   html += '</tr>';
                 $("#showHistoryTable tfoot").html(html);
               } else {

@@ -98,6 +98,10 @@ td .link {
   text-wrap: nowrap;
 }
 
+.nowrap {
+  text-wrap: nowrap;
+}
+
 table .amount {
   font-weight: bold; 
   text-align: right;
