@@ -99,7 +99,7 @@ td .link {
 }
 
 .nowrap {
-  text-wrap: nowrap;
+  text-wrap: nowrap !important;
 }
 
 table .amount {

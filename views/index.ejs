@@ -593,14 +593,14 @@
                   var html = '<tr>';
                   html += '<td>' + time + '</td>';
                   html += '<td style="text-align: center"><a href="https://pro.goonus.io/futures/'+plitSymbol[0]+'_VNDC" target="_blank">' + x.symbol + '</a></td>';
-                  html += '<td class="amount" style="color: '+ amountColor +'">' + parseInt(amount).toLocaleString('en') + ' '+ x.asset +'</td>';
+                  html += '<td class="amount nowrap" style="color: '+ amountColor +'">' + parseInt(amount).toLocaleString('en') + ' VNDC</td>';
                   html += '</tr>';
                   $("#showHistoryTable tbody").append(html);
                 });
                 const totalAmountColor = totalAmount > 0 ? 'green' : 'red';
                 var html = '<tr>';
                   html += '<td colspan="2"></td>';
-                  html += '<td class="amount" style="color: '+ totalAmountColor +'; text-wrap: nowrap;">' + parseInt(totalAmount).toLocaleString('en') + ' VNDC</td>';
+                  html += '<td class="amount nowrap" style="color: '+ totalAmountColor +'">' + parseInt(totalAmount).toLocaleString('en') + ' VNDC</td>';
                   html += '</tr>';
                 $("#showHistoryTable tfoot").html(html);
               } else {
