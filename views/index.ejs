@@ -554,8 +554,8 @@
                   html += '<a href="javascript:;" onclick="dcaSymbol(\''+side+'\', \''+x.symbol+'\', '+x.leverage+', '+x.initialMargin*2+')" class="link">DCA1-2</a>';
                   html += '</td>';
                   html += '<td style="text-align: center">';
+                  html += '<a href="javascript:;" onclick="sldSymbol('+x.id+', \''+x.symbol+'\', 5, '+x.initialMargin+', '+x.size+', \''+side+'\', '+x.entryPrice+')" class="link">SLd 5%</a>';
                   html += '<a href="javascript:;" onclick="sldSymbol('+x.id+', \''+x.symbol+'\', 10, '+x.initialMargin+', '+x.size+', \''+side+'\', '+x.entryPrice+')" class="link">SLd 10%</a>';
-                  html += '<a href="javascript:;" onclick="sldSymbol('+x.id+', \''+x.symbol+'\', 20, '+x.initialMargin+', '+x.size+', \''+side+'\', '+x.entryPrice+')" class="link">SLd 20%</a>';
                   html += '</td>';
                   html += '<td style="text-align: center">';
                   html += '<a href="javascript:;" onclick="closeSymbol('+x.id+', \''+x.symbol+'\', '+x.size/2+')" class="link">Đóng 50%</a>';
