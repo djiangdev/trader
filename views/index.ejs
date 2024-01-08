@@ -553,8 +553,7 @@
                   html += '<td style="border-left: 5px solid '+ typeColor +'"><a href="https://pro.goonus.io/futures/'+plitSymbol[0]+'_VNDC" target="_blank">' + x.symbol + '</a> x' + x.leverage + '</td>';
                   html += '<td>';
                   html += 'S=' + Math.abs(x.size) + '<br>';
-                  html += 'P=' + Math.abs(x.entryPrice).toLocaleString('en-US') + '<br>';
-                  html += 'V=' + Math.abs(x.size*x.entryPrice).toLocaleString('en-US');
+                  html += 'P=' + Math.abs(Math.ceil(x.entryPrice)).toLocaleString('en-US') + '<br>';
                   html += '</td>';
                   html += '<td style="text-align: center">';
                   html += '<a href="javascript:;" onclick="dcaSymbol(\''+side+'\', \''+x.symbol+'\', '+x.leverage+', '+x.initialMargin+')" class="link">DCA1-1</a>';
@@ -586,7 +585,7 @@
                 var totalAmount = 0;
                 data.forEach(x => {
                   const plitSymbol = x.symbol.split('VNDC');
-                  const time = (new Date(x.created)).toLocaleTimeString() + ' ' + (new Date(x.created)).toLocaleDateString();
+                  const time = (new Date(x.created)).toLocaleTimeString('en-US', { hour12: false});
                   const amountColor = x.amount > 0 ? 'green' : '#9c0808';
                   const amount = x.amount > 0 ? '+' + x.amount : x.amount;
                   totalAmount += parseFloat(x.amount);
