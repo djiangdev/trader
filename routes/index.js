@@ -507,8 +507,8 @@ router.post('/', async function(req, res, next) {
 
           let processes = [];
 
-          processes.push(
-            try {
+          try {
+            processes.push(
               axios.request({
                 method: 'post',
                 maxBodyLength: Infinity,
@@ -535,7 +535,9 @@ router.post('/', async function(req, res, next) {
               }).then((response) => {
                 return response.data;
               })
-            } catch (error) {
+            );
+          } catch (error) {
+            processes.push(
               axios.request({
                 method: 'post',
                 maxBodyLength: Infinity,
@@ -562,8 +564,8 @@ router.post('/', async function(req, res, next) {
               }).then((response) => {
                 return response.data;
               })
-            }
-          );
+            );
+          }
 
           const sl = d.find(x => x.closePosition && x.symbol == data.symbol && x.type == 'STOP');
 
