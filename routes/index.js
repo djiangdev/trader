@@ -309,7 +309,7 @@ router.get('/history', async function(req, res, next) {
   }
 });
 
-router.post('/', async function(req, res, next) {
+router.post('/', async function(req, res, next) { 
   data.side = String(req.body.side);
   data.symbol = String(req.body.symbol);
   data.leverage = Number(req.body.leverage);
@@ -464,7 +464,7 @@ router.post('/', async function(req, res, next) {
             axios.request({
               method: 'get',
               maxBodyLength: Infinity,
-              url: 'https://api-pro.goonus.io/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED',
+              url: 'https://api-pro.goonus.io/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED&symbol='+data.symbol,
               headers: { 
                 'Authorization': 'Bearer ' + token
               }
