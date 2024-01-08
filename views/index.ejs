@@ -584,14 +584,15 @@
               if(Object.keys(data).length) {
                 var totalAmount = 0;
                 data.forEach(x => {
+                  totalAmount += parseFloat(x.realizedProfit);
                   const plitSymbol = x.symbol.split('VNDC');
-                  const time = (new Date(x.created)).toLocaleTimeString('en-US', { hour12: false});
-                  const amountColor = x.amount > 0 ? 'green' : '#9c0808';
-                  const amount = x.amount > 0 ? '+' + x.amount : x.amount;
-                  totalAmount += parseFloat(x.amount);
+                  const time = (new Date(x.updated)).toLocaleTimeString('en-US', { hour12: false});
+                  const amountColor = x.realizedProfit > 0 ? 'green' : '#9c0808';
+                  const amount = x.realizedProfit > 0 ? '+' + x.realizedProfit : x.realizedProfit;
+                  const typeColor = x.side == 'BUY' ? 'green' : 'red';
                   var html = '<tr>';
                   html += '<td>' + time + '</td>';
-                  html += '<td style="text-align: center"><a href="https://pro.goonus.io/futures/'+plitSymbol[0]+'_VNDC" target="_blank">' + x.symbol + '</a></td>';
+                  html += '<td style="text-align: center; border-left: 5px solid '+ typeColor +'"><a href="https://pro.goonus.io/futures/'+plitSymbol[0]+'_VNDC" target="_blank">' + x.symbol + '</a></td>';
                   html += '<td class="amount nowrap" style="color: '+ amountColor +'">' + parseInt(amount).toLocaleString('en') + ' VNDC</td>';
                   html += '</tr>';
                   $("#showHistoryTable tbody").append(html);

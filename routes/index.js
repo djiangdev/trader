@@ -298,12 +298,12 @@ router.get('/history', async function(req, res, next) {
     const list = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: 'https://api-pro.goonus.io/perpetual/v1/history/transactions?type=PNL&startTime='+start+'&endTime='+end,
+      url: 'https://api-pro.goonus.io/perpetual/v1/fills?startTime='+start+'&endTime='+end,
       headers: { 
         'Authorization': 'Bearer ' + token
       }
     });
-    res.send(list.data);
+    res.send(list.data.filter(x => x.realizedProfit != 0));
   } catch (error) {
     res.send(error.response.data);
   }
