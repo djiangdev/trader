@@ -520,7 +520,7 @@
           "INJVNDC|30|0.1"
         ];
 
-        $( "#symbol" ).autocomplete({
+        $("#symbol").autocomplete({
           source: availableTags,
           select: function( event, ui ) {
             const item = tagLimits.find(x => x.indexOf(ui.item.value) != -1);
@@ -550,7 +550,7 @@
                   const typeColor = x.size > 0 ? 'green' : 'red';
                   const side = x.size > 0 ? 'BUY' : 'SELL';
                   var html = '<tr>';
-                  html += '<td style="border-left: 5px solid '+ typeColor +'"><a href="https://pro.goonus.io/futures/'+plitSymbol[0]+'_VNDC" target="_blank">' + x.symbol + '</a> x' + x.leverage + '</td>';
+                  html += '<td style="border-left: 5px solid '+ typeColor +'"><a href="https://pro.goonus.io/futures/'+plitSymbol[0]+'_VNDC" target="_blank">' + x.symbol + '</a> <small>x' + x.leverage + '</small></td>';
                   html += '<td>';
                   html += 'S=' + Math.abs(x.size) + '<br>';
                   html += 'P=' + Math.abs(Math.ceil(x.entryPrice)).toLocaleString('en-US') + '<br>';
@@ -589,11 +589,11 @@
                   const time = (new Date(x.updated)).toLocaleTimeString('en-US', { hour12: false});
                   const amountColor = x.realizedProfit > 0 ? 'green' : '#9c0808';
                   const amount = x.realizedProfit > 0 ? '+' + x.realizedProfit : x.realizedProfit;
-                  const typeColor = x.side == 'SELL' ? 'green' : 'red';
+                  const entryColor = x.side == 'SELL' ? 'green' : 'red';
                   var html = '<tr>';
                   html += '<td>' + time + '</td>';
-                  html += '<td style="text-align: center; border-left: 5px solid '+ typeColor +'"><a href="https://pro.goonus.io/futures/'+plitSymbol[0]+'_VNDC" target="_blank">' + x.symbol + '</a></td>';
-                  html += '<td style="text-align: center">' + parseInt(x.price).toLocaleString('en') + '</td>';
+                  html += '<td style="text-align: center; border-left: 5px solid '+ entryColor +'"><a href="https://pro.goonus.io/futures/'+plitSymbol[0]+'_VNDC" target="_blank">' + x.symbol + '</a> <small>x' + x.leverage + '</small></td>';
+                  html += '<td style="text-align: center;">' + parseInt(x.price).toLocaleString('en') + '</td>';
                   html += '<td class="amount nowrap" style="color: '+ amountColor +'">' + parseInt(amount).toLocaleString('en') + ' VNDC</td>';
                   html += '</tr>';
                   $("#showHistoryTable tbody").append(html);
