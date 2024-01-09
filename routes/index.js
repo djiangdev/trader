@@ -264,7 +264,7 @@ router.get('/list', async function(req, res, next) {
       }
     });
     const token = access.data.accessToken;
-    const list = await axios.request({
+    const positions = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
       url: 'https://api-pro.goonus.io/perpetual/v1/positions?status=OPEN',
@@ -272,7 +272,31 @@ router.get('/list', async function(req, res, next) {
         'Authorization': 'Bearer ' + token
       }
     });
-    res.send(list.data);
+    if (Object.keys(positions.data).length) {
+      let promises = [];
+      positions.data.forEach(x => {
+        promises.push(
+          axios.request({
+            method: 'get',
+            maxBodyLength: Infinity,
+            url: 'https://api-pro.goonus.io/perpetual/v1/ticker/24hr?symbol=' + x.symbol,
+            headers: { 
+              'Authorization': 'Bearer ' + token
+            }
+          })
+          .then((response) => {
+            return response.data;
+          })
+        );
+      });
+      const results = await Promise.all(promises);
+      positions.data.map(x => {
+        const lastPrice = (results.find(z => z.symbol == x.symbol)).lastPrice;
+        x.lastPrice = lastPrice;
+        return x;
+      });
+    }
+    res.send(positions.data);
   } catch (error) {
     res.send(error.response.data);
   }
