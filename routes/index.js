@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
-const tp = 30;
+const tp = 20;
 const sl = 50;
 
 let data = {
