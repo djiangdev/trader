@@ -315,10 +315,10 @@ router.get('/history', async function(req, res, next) {
     });
     const token = access.data.accessToken;
     let start = new Date();
-    start.setUTCHours(0,0,0,0);
+    start.setHours(0,0,0,0);
     start = new Date(start.toUTCString()).getTime();
     let end = new Date();
-    end.setUTCHours(23,59,59,999);
+    end.setHours(23,59,59,999);
     end = new Date(end.toUTCString()).getTime();
     const list = await axios.request({
       method: 'get',

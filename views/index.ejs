@@ -554,8 +554,8 @@
                   html += '<td style="border-left: 5px solid '+ typeColor +'"><a href="https://pro.goonus.io/futures/'+plitSymbol[0]+'_VNDC" target="_blank">' + x.symbol + '</a> <small>x' + x.leverage + '</small></td>';
                   html += '<td>';
                   html += 'S=' + Math.abs(x.size) + '<br>';
-                  html += 'E=' + Math.abs(Math.ceil(x.entryPrice)).toLocaleString('en-US') + '<br>';
-                  html += 'P=' + Math.abs(Math.ceil(x.lastPrice)).toLocaleString('en-US');
+                  html += 'E=' + Math.abs(Math.round(x.entryPrice)).toLocaleString('en-US') + '<br>';
+                  html += 'P=' + Math.abs(Math.round(x.lastPrice)).toLocaleString('en-US');
                   html += '</td>';
                   html += '<td style="text-align: center">';
                   html += '<a href="javascript:;" onclick="dcaSymbol(\''+side+'\', \''+x.symbol+'\', '+x.leverage+', '+x.initialMargin+')" class="link">DCA1-1</a>';
@@ -594,14 +594,14 @@
                   var html = '<tr>';
                   html += '<td>' + time + '</td>';
                   html += '<td style="text-align: center; border-left: 5px solid '+ entryColor +'"><a href="https://pro.goonus.io/futures/'+plitSymbol[0]+'_VNDC" target="_blank">' + x.symbol + '</a> <small>x' + x.leverage + '</small></td>';
-                  html += '<td class="amount nowrap" style="color: '+ amountColor +'">' + parseInt(amount).toLocaleString('en') + ' VNDC</td>';
+                  html += '<td class="amount nowrap" style="color: '+ amountColor +'">' + Math.round(amount).toLocaleString('en') + ' VNDC</td>';
                   html += '</tr>';
                   $("#showHistoryTable tbody").append(html);
                 });
                 const totalAmountColor = totalAmount > 0 ? '#62f302' : 'red';
                 var html = '<tr>';
                   html += '<td colspan="2"></td>';
-                  html += '<td class="amount nowrap" style="color: '+ totalAmountColor +'; font-size: 16px">' + parseInt(totalAmount).toLocaleString('en') + ' VNDC</td>';
+                  html += '<td class="amount nowrap" style="color: '+ totalAmountColor +'; font-size: 16px">' + Math.round(totalAmount).toLocaleString('en') + ' VNDC</td>';
                   html += '</tr>';
                 $("#showHistoryTable tfoot").html(html);
               } else {
