@@ -33,8 +33,8 @@
       <br>
       <input type="number" name="stop_market_price" value="" style="width: 140px; display: none;" placeholder="Giá stop...">
       <br>
-      <input type="checkbox" name="take_profit" id="take_profit" <% if (data && data.take_profit != 'undefined') { %> checked <% } %>> TP <%= data.tp %>%
-      <input type="checkbox" name="stop_loss" id="stop_loss" <% if (data && data.stop_loss != 'undefined') { %> checked <% } %>> SL <%= data.sl %>%
+      <input type="checkbox" name="take_profit" id="take_profit" <% if (data && data.take_profit) { %> checked <% } %>> TP <%= data.tp %>%
+      <input type="checkbox" name="stop_loss" id="stop_loss" <% if (data && data.stop_loss) { %> checked <% } %>> SL <%= data.sl %>%
       <br>
       <br>
       <input type="hidden" name="type" value="<% if (data && data.type) { %><%= data.type %><% } %>">
