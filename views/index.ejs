@@ -560,8 +560,9 @@
                   html += '<a href="javascript:;" onclick="dcaSymbol(\''+side+'\', \''+x.symbol+'\', '+x.leverage+', '+x.initialMargin*2+')" class="link">DCA1-2</a>';
                   html += '</td>';
                   html += '<td style="text-align: center">';
-                  html += '<a href="javascript:;" onclick="sldSymbol('+x.id+', \''+x.symbol+'\', 5, '+x.initialMargin+', '+x.size+', \''+side+'\', '+x.entryPrice+')" class="link">SLd 5%</a>';
-                  html += '<a href="javascript:;" onclick="sldSymbol('+x.id+', \''+x.symbol+'\', 10, '+x.initialMargin+', '+x.size+', \''+side+'\', '+x.entryPrice+')" class="link">SLd 10%</a>';
+                  html += 'SLd <a href="javascript:;" onclick="sldSymbol('+x.id+', \''+x.symbol+'\', 5, '+x.initialMargin+', '+x.size+', \''+side+'\', '+x.entryPrice+')">5%</a> - ';
+                  html += '<a href="javascript:;" onclick="sldSymbol('+x.id+', \''+x.symbol+'\', 10, '+x.initialMargin+', '+x.size+', \''+side+'\', '+x.entryPrice+')">10%</a> - ';
+                  html += '<a href="javascript:;" onclick="sldSymbol('+x.id+', \''+x.symbol+'\', 20, '+x.initialMargin+', '+x.size+', \''+side+'\', '+x.entryPrice+')">20%</a>';
                   html += '</td>';
                   html += '<td style="text-align: center">';
                   html += '<a href="javascript:;" onclick="closeSymbol('+x.id+', \''+x.symbol+'\', '+x.size/2+')" class="link">Đóng 50%</a>';
@@ -571,7 +572,7 @@
                   $("#showListTable tbody").append(html);
                 });
               } else {
-                $("#showListTable tfoot").html('Bạn không có vị thế nào');
+                $("#showListTable tfoot").html('Không có vị thế nào');
               }
             }
           );
@@ -605,7 +606,7 @@
                   html += '</tr>';
                 $("#showHistoryTable tfoot").html(html);
               } else {
-                $("#showHistoryTable tfoot").html('Bạn không có biến động nào');
+                $("#showHistoryTable tfoot").html('Không có biến động nào');
               }
             }
           );
