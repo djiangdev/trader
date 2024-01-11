@@ -774,4 +774,22 @@ router.post('/sld', async function(req, res, next) {
   }
 });
 
+router.get('/bot', async function(req, res, next) {
+  try {
+    const list = await axios.request({
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: 'https://my-master.goonus.io/api/articles/bot-articles?status=CLOSE&page=0&size=3',
+      headers: {
+        "Content-Type": "application/json",
+        "session-token": "8FRLFfiORmbnM6MyfXuv32qgWgHgCVts",
+        "Referer": false
+      },
+    });
+    res.send(list.data);
+  } catch (error) {
+    res.send(error.response.data);
+  }
+});
+
 module.exports = router;
