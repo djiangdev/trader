@@ -1,6 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
+const cron = require('node-cron');
+
+const { MongoClient, ServerApiVersion } = require('mongodb');
+const uri = "mongodb+srv://dinhgiang2611:9oZwTMWNyBNUUFI5@cluster0.lugbagm.mongodb.net/?retryWrites=true&w=majority";
+
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
+});
 
 const tp = 20;
 const sl = 50;
@@ -774,22 +786,47 @@ router.post('/sld', async function(req, res, next) {
   }
 });
 
-router.get('/bot', async function(req, res, next) {
+async function bot(db) {
   try {
+    const collection = db.collection('documents');
+
     const list = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: 'https://my-master.goonus.io/api/articles/bot-articles?status=CLOSE&page=0&size=3',
+      url: 'https://my-master.goonus.io/api/articles/bot-articles?status=OPEN&page=0&size=3',
       headers: {
         "Content-Type": "application/json",
         "session-token": "8FRLFfiORmbnM6MyfXuv32qgWgHgCVts",
-        "Referer": false
+        "Referer": "null"
       },
     });
-    res.send(list.data);
+
+    if (list.data.length) {
+      await Promise.all(list.data.map(async (x) => {
+        const filtered = await collection.find({id: x.id}).toArray();
+        if (filtered.length) {
+          console.log('Found document filtered by id =>', filtered);
+        } else {
+          const inserted = await collection.insertMany([x]);
+          console.log('Inserted document id =>', inserted);
+
+          // add sign via API
+          console.log(x);
+        }
+      }));
+    }
+
+    return 'done.';
   } catch (error) {
-    res.send(error.response.data);
+    console.log(error);
   }
+}
+
+cron.schedule('*/5 * * * * *', async () => {
+  console.log('running a task every 5 seconds');
+  await client.connect();
+  const db = client.db('bots');
+  bot(db).catch(console.dir);
 });
 
 module.exports = router;
