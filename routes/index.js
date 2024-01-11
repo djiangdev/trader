@@ -4,7 +4,7 @@ const axios = require('axios');
 const cron = require('node-cron');
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = "mongodb+srv://dinhgiang2611:9oZwTMWNyBNUUFI5@cluster0.lugbagm.mongodb.net/?retryWrites=true&w=majority";
+const uri = "mongodb+srv://dinhgiang2611:"+process.env.MONGOGB_PASS+"@cluster0.lugbagm.mongodb.net/?retryWrites=true&w=majority";
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -14,6 +14,7 @@ const client = new MongoClient(uri, {
   }
 });
 
+const cronReq = 10;
 const tp = 20;
 const sl = 50;
 
@@ -551,6 +552,22 @@ router.post('/sld', async function(req, res, next) {
   }
 });
 
+if (process.env.MNAI == 'true') {
+  (async () => {
+    await client.connect();
+    console.log('Connected successfully to database');
+    const db = client.db('bots');
+    cron.schedule('*/'+cronReq+' * * * * *', async () => {
+      try {
+        console.log('running a task every '+cronReq+' seconds');
+        bot(db).catch(console.dir);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+  })();
+}
+
 async function bot(db) {
   try {
     const collection = db.collection('documents');
@@ -576,7 +593,7 @@ async function bot(db) {
           console.log('Inserted document id =>', inserted);
 
           // add sign via API
-          console.log(JO);
+          console.log(x);
         }
       }));
     }
@@ -586,12 +603,5 @@ async function bot(db) {
     console.log(error);
   }
 }
-
-cron.schedule('*/5 * * * * *', async () => {
-  console.log('running a task every 5 seconds');
-  await client.connect();
-  const db = client.db('bots');
-  bot(db).catch(console.dir);
-});
 
 module.exports = router;
