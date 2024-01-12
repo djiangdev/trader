@@ -14,7 +14,7 @@ const client = new MongoClient(uri, {
   }
 });
 
-const cronReq = 10;
+const cronReq = 5;
 const tp = 20;
 const sl = 50;
 
@@ -121,8 +121,10 @@ router.post('/', async function(req, res, next) {
   data.cookie = req.body.cookie ? String(req.body.cookie) : data.cookie;
   data.type = String(req.body.type);
   data.stop_market_price = Number(req.body.stop_market_price);
-  data.take_profit = req.body.take_profit ? true : false;
   data.stop_loss = req.body.stop_loss ? true : false;
+  data.take_profit = req.body.take_profit ? true : false;
+  data.loss_price = req.body.loss_price ? Number(req.body.loss_price) : false;
+  data.take_price = req.body.take_price ? Number(req.body.take_price) : false;
   if (req.query.tp) data.tp = Number(req.query.tp);
   if (req.query.sl) data.sl = Number(req.query.sl);
 
@@ -309,6 +311,9 @@ router.post('/', async function(req, res, next) {
           let takePrice = lastPrice - (takeMoney/newSize);
           if (data.side == 'BUY') lossPrice = lastPrice - (lossMoney/newSize);
           if (data.side == 'BUY') takePrice = lastPrice + (takeMoney/newSize);
+
+          if (data.loss_price) lossPrice = data.loss_price;
+          if (data.take_price) takePrice = data.take_price;
 
           let processes = [];
 
@@ -587,13 +592,35 @@ async function bot(db) {
       await Promise.all(list.data.map(async (x) => {
         const filtered = await collection.find({id: x.id}).toArray();
         if (filtered.length) {
-          console.log('Found document filtered by id =>', filtered);
+          console.log('Found document filtered by id =>', x.id);
         } else {
           const inserted = await collection.insertMany([x]);
           console.log('Inserted document id =>', inserted);
 
-          // add sign via API
-          console.log(x);
+          const data = {
+            type: 'MARKET',
+            side: (x.futures == 'SHORT') ? 'SELL' : 'BUY',
+            symbol: x.coin_pair_id.replace("/", ""),
+            leverage: x.leverage,
+            stop_loss: true,
+            take_profit: true,
+            loss_price: Number(x.textSL.replace(",", "")),
+            take_price: Number(x.textTP.replace(",", "")),
+            margin: 10000,
+          };
+          try {
+            await axios.request({
+              method: 'post',
+              maxBodyLength: Infinity,
+              url: 'https://trader.adaptable.app/',
+              headers: { 
+                'Content-Type': 'application/json', 
+              },
+              data : JSON.stringify(data)
+            });
+          } catch (error) {
+            console.log(error);
+          }
         }
       }));
     }
