@@ -14,6 +14,7 @@ const client = new MongoClient(uri, {
   }
 });
 
+const followMargin = 10000;
 const cronReq = 5;
 const tp = 20;
 const sl = 50;
@@ -25,6 +26,8 @@ let data = {
 router.get('/', function(req, res, next) {
   data.error = false;
   data.success = false;
+  data.stop_loss = true;
+  data.take_profit = true;
   data.tp = req.query.tp ? Number(req.query.tp) : tp;
   data.sl = req.query.sl ? Number(req.query.sl) : sl;
   res.render('index', { data });
@@ -557,26 +560,8 @@ router.post('/sld', async function(req, res, next) {
   }
 });
 
-if (process.env.MNAI == 'true') {
-  (async () => {
-    await client.connect();
-    console.log('Connected successfully to database');
-    const db = client.db('bots');
-    cron.schedule('*/'+cronReq+' * * * * *', async () => {
-      try {
-        console.log('running a task every '+cronReq+' seconds');
-        bot(db).catch(console.dir);
-      } catch (error) {
-        console.log(error);
-      }
-    });
-  })();
-}
-
-async function bot(db) {
+async function bot(db, collection) {
   try {
-    const collection = db.collection('documents');
-
     const list = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
@@ -592,11 +577,10 @@ async function bot(db) {
       await Promise.all(list.data.map(async (x) => {
         const filtered = await collection.find({id: x.id}).toArray();
         if (filtered.length) {
-          console.log('Found document filtered by id =>', x.id);
+          console.log(`Existed [${x.user.name}] ${x.title} by id =>`, x.id);
         } else {
           const inserted = await collection.insertMany([x]);
-          console.log('Inserted document id =>', inserted);
-
+          console.log(`Inserted [${x.user.name}] ${x.title} id =>`, x);
           const data = {
             type: 'MARKET',
             side: (x.futures == 'SHORT') ? 'SELL' : 'BUY',
@@ -604,22 +588,75 @@ async function bot(db) {
             leverage: x.leverage,
             stop_loss: true,
             take_profit: true,
-            loss_price: Number(x.textSL.replace(",", "")),
             take_price: Number(x.textTP.replace(",", "")),
-            margin: 10000,
+            margin: followMargin,
           };
-          try {
-            await axios.request({
+
+          axios.request({
+            method: 'post',
+            maxBodyLength: Infinity,
+            url: 'https://trader.adaptable.app/?sl=20',
+            headers: {
+              'Content-Type': 'application/json', 
+            },
+            data: JSON.stringify(data)
+          }).then((response) => {
+            return response.data;
+          });
+        }
+      }));
+    }
+
+    return 'done.';
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+async function master(db, collection, masterId) {
+  try {
+    const list = await axios.request({
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: 'https://my-master.goonus.io/api/articles/getArticlesByUser?user_id='+masterId+'&page=0&size=3',
+      headers: {
+        "Content-Type": "application/json",
+        "session-token": "8FRLFfiORmbnM6MyfXuv32qgWgHgCVts",
+        "Referer": "null"
+      },
+    });
+
+    if (list.data.length) {
+      await Promise.all(list.data.map(async (x) => {
+        if (x.trans == 'ONUS_FUTURES') {
+          const filtered = await collection.find({id: x.id}).toArray();
+          if (filtered.length) {
+            console.log(`Existed [${x.user.name}] ${x.content} by id =>`, x.id);
+          } else {
+            const inserted = await collection.insertMany([x]);
+            console.log(`Inserted [${x.user.name}] ${x.content} id =>`, x);
+
+            const data = {
+              type: 'MARKET',
+              side: (x.futures == 'SHORT') ? 'BUY' : 'SELL',
+              symbol: x.coin_pair_id.replace("/", ""),
+              leverage: 15,
+              stop_loss: true,
+              take_profit: true,
+              margin: followMargin,
+            };
+
+            axios.request({
               method: 'post',
               maxBodyLength: Infinity,
-              url: 'https://trader.adaptable.app/',
-              headers: { 
-                'Content-Type': 'application/json', 
+              url: 'https://trader.adaptable.app/?tp=20&sl=20',
+              headers: {
+                'Content-Type': 'application/json',
               },
-              data : JSON.stringify(data)
+              data: JSON.stringify(data)
+            }).then((response) => {
+              return response.data;
             });
-          } catch (error) {
-            console.log(error);
           }
         }
       }));
@@ -629,6 +666,34 @@ async function bot(db) {
   } catch (error) {
     console.log(error);
   }
+}
+
+if (process.env.MNAI == 'true') {
+  (async () => {
+    await client.connect();
+    console.log('Connected successfully to database');
+
+    const dbBot = client.db('bots');
+    cron.schedule('*/'+cronReq+' * * * * *', async () => {
+      try {
+        bot(dbBot, dbBot.collection('documents'))
+        .catch(console.dir);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    const dbMaster = client.db('masters');
+    cron.schedule('*/'+cronReq+' * * * * *', async () => {
+      try {
+        // Duong_Tri_MMO
+        master(dbMaster, dbMaster.collection('documents'), '6277729709683058590')
+        .catch(console.dir);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+  })();
 }
 
 module.exports = router;
