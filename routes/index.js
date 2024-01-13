@@ -94,9 +94,6 @@ router.get('/list', async function(req, res, next) {
   }
 });
 
-console.log(moment().startOf('day').unix());
-console.log(moment().endOf('day').unix());
-
 router.get('/history', async function(req, res, next) {
   try {
     const access = await axios.request({
@@ -267,6 +264,8 @@ router.post('/', async function(req, res, next) {
               "closePosition": false
             })
           });
+
+          await sleep(2000);
     
           const [c, d] = await Promise.all([
             axios.request({
@@ -572,6 +571,11 @@ router.post('/sld', async function(req, res, next) {
 
 async function bot(db, collection) {
   try {
+    const countStopLoss = await countStopLosses(collection);
+    if (countStopLoss >= 3) {
+      return logger.warn(`Tín hiệu Bot đã chạm Stop Loss ${countStopLoss} lần!`);
+    }
+
     const list = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
@@ -628,6 +632,11 @@ async function bot(db, collection) {
 
 async function master(db, collection, masterId, abs = false) {
   try {
+    const countStopLoss = await countStopLosses(collection);
+    if (countStopLoss >= 3) {
+      return logger.warn(`Tín hiệu Master đã chạm Stop Loss ${countStopLoss} lần!`);
+    }
+
     const list = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
@@ -718,6 +727,46 @@ if (process.env.MNAI == 'true') {
       }
     });
   })();
+}
+
+async function countStopLosses(collection) {
+  let count = 0;
+  const signsToday = await collection.find({createdDate: {$gte: moment().startOf('day').unix(), $lt: moment().endOf('day').unix()}}).toArray();
+  if (signsToday.length) {
+    const access = await axios.request({
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: 'https://pro.goonus.io/api/auth/session',
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: data.cookie
+      }
+    });
+    const list = await axios.request({
+      method: 'get',
+      maxBodyLength: Infinity,
+      url: 'https://api-pro.goonus.io/perpetual/v1/fills?startTime='+moment().startOf('day')+'&endTime='+moment().endOf('day'),
+      headers: { 
+        'Authorization': 'Bearer ' + access.data.accessToken
+      }
+    });
+    let stopLosses = list.data.filter(x => x.realizedProfit < 0);
+    if (stopLosses.length) {
+      signsToday.forEach(x => {
+        const symbol = x.coin_pair_id.replace("/", "");
+        if (stopLosses.find(y => y.symbol == symbol)) {
+          count += 1;
+        }
+      });
+    }
+  }
+  return count;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 module.exports = router;
