@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const cron = require('node-cron');
+const moment = require('moment-timezone');
 const { createLogger, format, transports } = require('winston');
+moment.tz.setDefault('Asia/Ho_Chi_Minh');
 
 const logger = createLogger({
   format: format.combine(
@@ -92,6 +94,9 @@ router.get('/list', async function(req, res, next) {
   }
 });
 
+console.log(moment().startOf('day').unix());
+console.log(moment().endOf('day').unix());
+
 router.get('/history', async function(req, res, next) {
   try {
     const access = await axios.request({
@@ -104,12 +109,8 @@ router.get('/history', async function(req, res, next) {
       }
     });
     const token = access.data.accessToken;
-    let start = new Date();
-    start.setHours(0,0,0,0);
-    start = new Date(start.toUTCString()).getTime();
-    let end = new Date();
-    end.setHours(23,59,59,999);
-    end = new Date(end.toUTCString()).getTime();
+    const start = moment().startOf('day');
+    const end = moment().endOf('day');
     const list = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
