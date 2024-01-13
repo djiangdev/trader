@@ -3,17 +3,11 @@ const router = express.Router();
 const axios = require('axios');
 const cron = require('node-cron');
 const moment = require('moment-timezone');
-const { createLogger, format, transports } = require('winston');
 moment.tz.setDefault('Asia/Ho_Chi_Minh');
+const logger = require('node-color-log');
 
-const logger = createLogger({
-  format: format.combine(
-    format.splat(),
-    format.simple(),
-    format.colorize()
-  ),
-  transports: [new transports.Console()]
-});
+logger.setLevel("info");
+logger.setDate(() => (moment()).format('LTS'));
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = "mongodb+srv://dinhgiang2611:"+process.env.MONGOGB_PASS+"@cluster0.lugbagm.mongodb.net/?retryWrites=true&w=majority";
@@ -26,7 +20,7 @@ const client = new MongoClient(uri, {
   }
 });
 
-const followMargin = 8000;
+const budgetForBot = 15000;
 const tp = 20;
 const sl = 50;
 
@@ -418,7 +412,7 @@ router.post('/', async function(req, res, next) {
       data.success = `${data.side} ${data.type} lệnh ${data.symbol}!`;
   }
   catch(error){
-      logger.info(error.response);
+      logger.error(error);
       if (error.response.data && error.response.data.code == 'order_less_than_min_size') {
         const minMargin = (data.min_size*lastPrice)/data.leverage;
         error.response.data.code = `Ký quỹ tối thiểu ${minMargin.toLocaleString('en-US')} VNDC`;
@@ -606,7 +600,7 @@ async function bot(db, collection) {
             stop_loss: true,
             take_profit: true,
             take_price: Number(x.textTP.replace(",", "")),
-            margin: followMargin,
+            margin: budgetForBot,
           };
 
           axios.request({
@@ -672,7 +666,7 @@ async function master(db, collection, masterId, abs = false) {
               leverage: 15,
               stop_loss: true,
               take_profit: true,
-              margin: followMargin,
+              margin: budgetForBot,
             };
 
             axios.request({
@@ -706,7 +700,7 @@ if (process.env.MNAI == 'true') {
     cron.schedule('*/5 * * * * *', async () => {
       try {
         bot(dbBot, dbBot.collection('documents'))
-        .catch(console.dir);
+        .catch(logger.dir);
       } catch (error) {
         logger.info(error);
       }
@@ -717,11 +711,11 @@ if (process.env.MNAI == 'true') {
       try {
         // Duong_Tri_MMO
         master(dbMaster, dbMaster.collection('documents'), '6277729709683058590', abs = true)
-        .catch(console.dir);
+        .catch(logger.dir);
 
         // VÕ MINH HIẾU
         master(dbMaster, dbMaster.collection('documents'), '6277729706606763934', abs = false)
-        .catch(console.dir);
+        .catch(logger.dir);
       } catch (error) {
         logger.info(error);
       }
