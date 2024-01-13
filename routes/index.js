@@ -49,7 +49,7 @@ router.get('/list', async function(req, res, next) {
     const access = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: 'https://pro.goonus.io/api/auth/session',
+      url: process.env.API_AUTH_URI+ '/api/auth/session',
       headers: {
         "Content-Type": "application/json",
         Cookie: data.cookie
@@ -59,7 +59,7 @@ router.get('/list', async function(req, res, next) {
     const positions = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: 'https://api-pro.goonus.io/perpetual/v1/positions?status=OPEN',
+      url: process.env.API_HOST_URI + '/perpetual/v1/positions?status=OPEN',
       headers: { 
         'Authorization': 'Bearer ' + token
       }
@@ -71,7 +71,7 @@ router.get('/list', async function(req, res, next) {
           axios.request({
             method: 'get',
             maxBodyLength: Infinity,
-            url: 'https://api-pro.goonus.io/perpetual/v1/ticker/24hr?symbol=' + x.symbol,
+            url: process.env.API_HOST_URI + '/perpetual/v1/ticker/24hr?symbol=' + x.symbol,
             headers: { 
               'Authorization': 'Bearer ' + token
             }
@@ -99,7 +99,7 @@ router.get('/history', async function(req, res, next) {
     const access = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: 'https://pro.goonus.io/api/auth/session',
+      url: process.env.API_AUTH_URI+ '/api/auth/session',
       headers: {
         "Content-Type": "application/json",
         Cookie: data.cookie
@@ -111,7 +111,7 @@ router.get('/history', async function(req, res, next) {
     const list = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: 'https://api-pro.goonus.io/perpetual/v1/fills?startTime='+start+'&endTime='+end,
+      url: process.env.API_HOST_URI + '/perpetual/v1/fills?startTime='+start+'&endTime='+end,
       headers: { 
         'Authorization': 'Bearer ' + token
       }
@@ -141,7 +141,7 @@ router.post('/', async function(req, res, next) {
   const access = await axios.request({
     method: 'get',
     maxBodyLength: Infinity,
-    url: 'https://pro.goonus.io/api/auth/session',
+    url: process.env.API_AUTH_URI+ '/api/auth/session',
     headers: {
       "Content-Type": "application/json",
       Cookie: data.cookie
@@ -154,7 +154,7 @@ router.post('/', async function(req, res, next) {
     axios.request({
       method: 'post',
       maxBodyLength: Infinity,
-      url: 'https://api-pro.goonus.io/perpetual/v1/leverage',
+      url: process.env.API_HOST_URI + '/perpetual/v1/leverage',
       headers: { 
         'Content-Type': 'application/json', 
         'Authorization': 'Bearer ' + token
@@ -170,7 +170,7 @@ router.post('/', async function(req, res, next) {
     axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: 'https://api-pro.goonus.io/perpetual/v1/ticker/24hr?symbol=' + data.symbol,
+      url: process.env.API_HOST_URI + '/perpetual/v1/ticker/24hr?symbol=' + data.symbol,
       headers: { 
         'Authorization': 'Bearer ' + token
       }
@@ -190,7 +190,7 @@ router.post('/', async function(req, res, next) {
           await axios.request({
             method: 'post',
             maxBodyLength: Infinity,
-            url: 'https://api-pro.goonus.io/perpetual/v1/order',
+            url: process.env.API_HOST_URI + '/perpetual/v1/order',
             headers: { 
               'Content-Type': 'application/json', 
               'Authorization': 'Bearer ' + token
@@ -215,7 +215,7 @@ router.post('/', async function(req, res, next) {
           await axios.request({
             method: 'post',
             maxBodyLength: Infinity,
-            url: 'https://api-pro.goonus.io/perpetual/v1/order',
+            url: process.env.API_HOST_URI + '/perpetual/v1/order',
             headers: { 
               'Content-Type': 'application/json', 
               'Authorization': 'Bearer ' + token
@@ -243,7 +243,7 @@ router.post('/', async function(req, res, next) {
           const order = await axios.request({
             method: 'post',
             maxBodyLength: Infinity,
-            url: 'https://api-pro.goonus.io/perpetual/v1/order',
+            url: process.env.API_HOST_URI + '/perpetual/v1/order',
             headers: { 
               'Content-Type': 'application/json', 
               'Authorization': 'Bearer ' + token
@@ -271,7 +271,7 @@ router.post('/', async function(req, res, next) {
             axios.request({
               method: 'get',
               maxBodyLength: Infinity,
-              url: 'https://api-pro.goonus.io/perpetual/v1/positions?status=OPEN',
+              url: process.env.API_HOST_URI + '/perpetual/v1/positions?status=OPEN',
               headers: { 
                 'Authorization': 'Bearer ' + token
               }
@@ -282,7 +282,7 @@ router.post('/', async function(req, res, next) {
             axios.request({
               method: 'get',
               maxBodyLength: Infinity,
-              url: 'https://api-pro.goonus.io/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED&symbol='+data.symbol,
+              url: process.env.API_HOST_URI + '/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED&symbol='+data.symbol,
               headers: { 
                 'Authorization': 'Bearer ' + token
               }
@@ -299,7 +299,7 @@ router.post('/', async function(req, res, next) {
             await axios.request({
               method: 'delete',
               maxBodyLength: Infinity,
-              url: 'https://api-pro.goonus.io/perpetual/v1/order',
+              url: process.env.API_HOST_URI + '/perpetual/v1/order',
               headers: { 
                 'Content-Type': 'application/json', 
                 'Authorization': 'Bearer ' + token
@@ -334,7 +334,7 @@ router.post('/', async function(req, res, next) {
               axios.request({
                 method: 'post',
                 maxBodyLength: Infinity,
-                url: 'https://api-pro.goonus.io/perpetual/v1/order',
+                url: process.env.API_HOST_URI + '/perpetual/v1/order',
                 headers: { 
                   'Content-Type': 'application/json', 
                   'Authorization': 'Bearer ' + token
@@ -365,7 +365,7 @@ router.post('/', async function(req, res, next) {
               axios.request({
                 method: 'post',
                 maxBodyLength: Infinity,
-                url: 'https://api-pro.goonus.io/perpetual/v1/order',
+                url: process.env.API_HOST_URI + '/perpetual/v1/order',
                 headers: { 
                   'Content-Type': 'application/json', 
                   'Authorization': 'Bearer ' + token
@@ -395,7 +395,7 @@ router.post('/', async function(req, res, next) {
             processes.push(axios.request({
                 method: 'delete',
                 maxBodyLength: Infinity,
-                url: 'https://api-pro.goonus.io/perpetual/v1/order',
+                url: process.env.API_HOST_URI + '/perpetual/v1/order',
                 headers: { 
                   'Content-Type': 'application/json', 
                   'Authorization': 'Bearer ' + token
@@ -438,7 +438,7 @@ router.post('/close', async function(req, res, next) {
     const access = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: 'https://pro.goonus.io/api/auth/session',
+      url: process.env.API_AUTH_URI+ '/api/auth/session',
       headers: {
         "Content-Type": "application/json",
         Cookie: data.cookie
@@ -448,7 +448,7 @@ router.post('/close', async function(req, res, next) {
     const response = await axios.request({
       method: 'post',
       maxBodyLength: Infinity,
-      url: 'https://api-pro.goonus.io/perpetual/v1/order',
+      url: process.env.API_HOST_URI + '/perpetual/v1/order',
       headers: { 
         'Content-Type': 'application/json', 
         'Authorization': 'Bearer ' + token
@@ -488,7 +488,7 @@ router.post('/sld', async function(req, res, next) {
     const access = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: 'https://pro.goonus.io/api/auth/session',
+      url: process.env.API_AUTH_URI+ '/api/auth/session',
       headers: {
         "Content-Type": "application/json",
         Cookie: data.cookie
@@ -498,7 +498,7 @@ router.post('/sld', async function(req, res, next) {
     const valid = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: 'https://api-pro.goonus.io/perpetual/v1/ticker/24hr?symbol=' + symbol,
+      url: process.env.API_HOST_URI + '/perpetual/v1/ticker/24hr?symbol=' + symbol,
       headers: { 
         'Authorization': 'Bearer ' + token
       }
@@ -515,7 +515,7 @@ router.post('/sld', async function(req, res, next) {
     const slRequest = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: 'https://api-pro.goonus.io/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED&symbol='+symbol,
+      url: process.env.API_HOST_URI + '/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED&symbol='+symbol,
       headers: { 
         'Authorization': 'Bearer ' + token
       }
@@ -525,7 +525,7 @@ router.post('/sld', async function(req, res, next) {
       await axios.request({
         method: 'delete',
         maxBodyLength: Infinity,
-        url: 'https://api-pro.goonus.io/perpetual/v1/order',
+        url: process.env.API_HOST_URI + '/perpetual/v1/order',
         headers: { 
           'Content-Type': 'application/json', 
           'Authorization': 'Bearer ' + token
@@ -542,7 +542,7 @@ router.post('/sld', async function(req, res, next) {
     const response = await axios.request({
       method: 'post',
       maxBodyLength: Infinity,
-      url: 'https://api-pro.goonus.io/perpetual/v1/order',
+      url: process.env.API_HOST_URI + '/perpetual/v1/order',
       headers: { 
         'Content-Type': 'application/json', 
         'Authorization': 'Bearer ' + token
@@ -736,7 +736,7 @@ async function countStopLosses(collection) {
     const access = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: 'https://pro.goonus.io/api/auth/session',
+      url: process.env.API_AUTH_URI+ '/api/auth/session',
       headers: {
         "Content-Type": "application/json",
         Cookie: data.cookie
@@ -745,7 +745,7 @@ async function countStopLosses(collection) {
     const list = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: 'https://api-pro.goonus.io/perpetual/v1/fills?startTime='+moment().startOf('day')+'&endTime='+moment().endOf('day'),
+      url: process.env.API_HOST_URI + '/perpetual/v1/fills?startTime='+moment().startOf('day')+'&endTime='+moment().endOf('day'),
       headers: { 
         'Authorization': 'Bearer ' + access.data.accessToken
       }
