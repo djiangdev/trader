@@ -563,10 +563,10 @@ router.post('/sld', async function(req, res, next) {
   }
 });
 
-async function bot(db, collection) {
+async function botOnus(db, collection) {
   try {
-    const countStopLoss = await countStopLosses(collection);
-    if (countStopLoss >= 3) {
+    const stopTrading = await limitTrader(collection, 3);
+    if (stopTrading) {
       return logger.warn(`Tín hiệu Bot đã chạm Stop Loss ${countStopLoss} lần!`);
     }
 
@@ -624,10 +624,10 @@ async function bot(db, collection) {
   }
 }
 
-async function master(db, collection, masterId, abs = false) {
+async function masterOnus(db, collection, masterId, abs = false) {
   try {
-    const countStopLoss = await countStopLosses(collection);
-    if (countStopLoss >= 3) {
+    const stopTrading = await limitTrader(collection, 3, masterId);
+    if (stopTrading) {
       return logger.warn(`Tín hiệu Master đã chạm Stop Loss ${countStopLoss} lần!`);
     }
 
@@ -691,7 +691,7 @@ async function master(db, collection, masterId, abs = false) {
   }
 }
 
-if (process.env.MNAI == 'true') {
+if (process.env.BOT == 'true') {
   (async () => {
     await client.connect();
     logger.info('Connected successfully to database');
@@ -699,7 +699,7 @@ if (process.env.MNAI == 'true') {
     const dbBot = client.db('bots');
     cron.schedule('*/5 * * * * *', async () => {
       try {
-        bot(dbBot, dbBot.collection('documents'))
+        botOnus(dbBot, dbBot.collection('documents'))
         .catch(logger.dir);
       } catch (error) {
         logger.info(error);
@@ -710,11 +710,7 @@ if (process.env.MNAI == 'true') {
     cron.schedule('*/10 * * * * *', async () => {
       try {
         // Duong_Tri_MMO
-        master(dbMaster, dbMaster.collection('documents'), '6277729709683058590', abs = true)
-        .catch(logger.dir);
-
-        // VÕ MINH HIẾU
-        master(dbMaster, dbMaster.collection('documents'), '6277729706606763934', abs = false)
+        masterOnus(dbMaster, dbMaster.collection('documents'), '6277729709683058590', abs = true)
         .catch(logger.dir);
       } catch (error) {
         logger.info(error);
@@ -723,9 +719,11 @@ if (process.env.MNAI == 'true') {
   })();
 }
 
-async function countStopLosses(collection) {
+async function limitTrader(collection, limit = 3, masterId = false) {
   let count = 0;
-  const signsToday = await collection.find({createdDate: {$gte: moment().startOf('day').unix(), $lt: moment().endOf('day').unix()}}).toArray();
+  let where = {createdDate: {$gte: moment().startOf('day').unix(), $lt: moment().endOf('day').unix()}};
+  if (masterId) where['user.id'] = masterId;
+  const signsToday = await collection.find(where).toArray();
   if (signsToday.length) {
     const access = await axios.request({
       method: 'get',
@@ -754,7 +752,10 @@ async function countStopLosses(collection) {
       });
     }
   }
-  return count;
+  if (count >= limit) {
+    return true;
+  }
+  return false;
 }
 
 function sleep(ms) {
