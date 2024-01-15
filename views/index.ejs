@@ -61,6 +61,16 @@
     </form>
     <script type="text/javascript">
       $(function() {
+        setTimeout(function() {
+          $("#showList").trigger('click');
+          $("#showHistory").trigger('click');
+        }, 2000);
+
+        setInterval(function() {
+          $("#showList").trigger('click');
+          $("#showHistory").trigger('click');
+        }, 60000);
+
         $("#market").click(function() {
           $("input[name=type]").val('MARKET');
           $("input[name=stop_market_price]").attr('required', false).hide();
@@ -610,11 +620,6 @@
             }
           );
         });
-
-        setTimeout(function() {
-          $("#showList").trigger('click');
-          $("#showHistory").trigger('click');
-        }, 2000);
       });
 
       function closeSymbol(id, symbol, size) {

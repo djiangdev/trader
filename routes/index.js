@@ -28,6 +28,26 @@ let data = {
   cookie: process.env.COOKIES,
 };
 
+let mobileHeaders = {
+  'Connection': 'keep-alive',
+  'Accept': 'application/json',
+  'Accept-Language': 'vi-vn',
+  'Host': 'my-master.goonus.io',
+  'Accept-Encoding': 'gzip, deflate, br',
+  "Session-Token": "8FRLFfiORmbnM6MyfXuv32qgWgHgCVts",
+  'User-Agent': 'VNDC/6 CFNetwork/1220.1 Darwin/20.3.0',
+  'Cookie': '_ga_WT03GV9QJK=GS1.1.1705241280.21.1.1705241314.0.0.0; _ga=GA1.1.274527292.1704969182',
+};
+
+let desktopHeaders = {
+  'Cookie': data.cookie,
+  'Accept-Language': 'vi-vn',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'Content-Type': 'application/json',
+  'Accept': 'application/json, text/plain, */*',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+};
+
 router.get('/', function(req, res, next) {
   data.error = false;
   data.success = false;
@@ -40,23 +60,22 @@ router.get('/', function(req, res, next) {
 
 router.get('/list', async function(req, res, next) {
   try {
+    desktopHeaders['Origin'] = process.env.API_AUTH_URI;
+    desktopHeaders['Referer'] = process.env.API_AUTH_URI;
     const access = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
       url: process.env.API_AUTH_URI+ '/api/auth/session',
-      headers: {
-        "Content-Type": "application/json",
-        Cookie: data.cookie
-      }
+      headers: desktopHeaders,
     });
-    const token = access.data.accessToken;
+    desktopHeaders['Origin'] = process.env.API_HOST_URI;
+    desktopHeaders['Referer'] = process.env.API_HOST_URI;
+    desktopHeaders['Authorization'] = 'Bearer ' + access.data.accessToken;
     const positions = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
       url: process.env.API_HOST_URI + '/perpetual/v1/positions?status=OPEN',
-      headers: { 
-        'Authorization': 'Bearer ' + token
-      }
+      headers: desktopHeaders,
     });
     if (Object.keys(positions.data).length) {
       let promises = [];
@@ -66,9 +85,7 @@ router.get('/list', async function(req, res, next) {
             method: 'get',
             maxBodyLength: Infinity,
             url: process.env.API_HOST_URI + '/perpetual/v1/ticker/24hr?symbol=' + x.symbol,
-            headers: { 
-              'Authorization': 'Bearer ' + token
-            }
+            headers: desktopHeaders
           })
           .then((response) => {
             return response.data;
@@ -90,25 +107,24 @@ router.get('/list', async function(req, res, next) {
 
 router.get('/history', async function(req, res, next) {
   try {
+    desktopHeaders['Origin'] = process.env.API_AUTH_URI;
+    desktopHeaders['Referer'] = process.env.API_AUTH_URI;
     const access = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
       url: process.env.API_AUTH_URI+ '/api/auth/session',
-      headers: {
-        "Content-Type": "application/json",
-        Cookie: data.cookie
-      }
+      headers: desktopHeaders
     });
-    const token = access.data.accessToken;
+    desktopHeaders['Origin'] = process.env.API_HOST_URI;
+    desktopHeaders['Referer'] = process.env.API_HOST_URI;
+    desktopHeaders['Authorization'] = 'Bearer ' + access.data.accessToken;
     const start = moment().startOf('day');
     const end = moment().endOf('day');
     const list = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
       url: process.env.API_HOST_URI + '/perpetual/v1/fills?startTime='+start+'&endTime='+end,
-      headers: { 
-        'Authorization': 'Bearer ' + token
-      }
+      headers: desktopHeaders
     });
     res.send(list.data.filter(x => x.realizedProfit != 0));
   } catch (error) {
@@ -136,23 +152,17 @@ router.post('/', async function(req, res, next) {
     method: 'get',
     maxBodyLength: Infinity,
     url: process.env.API_AUTH_URI+ '/api/auth/session',
-    headers: {
-      "Content-Type": "application/json",
-      Cookie: data.cookie
-    }
+    headers: desktopHeaders
   });
 
-  const token = access.data.accessToken;
+  desktopHeaders['Authorization'] = 'Bearer ' + access.data.accessToken;
 
   const [a, b] = await Promise.all([
     axios.request({
       method: 'post',
       maxBodyLength: Infinity,
       url: process.env.API_HOST_URI + '/perpetual/v1/leverage',
-      headers: { 
-        'Content-Type': 'application/json', 
-        'Authorization': 'Bearer ' + token
-      },
+      headers: desktopHeaders,
       data : JSON.stringify({
         "symbol": data.symbol,
         "leverage": data.leverage
@@ -165,9 +175,7 @@ router.post('/', async function(req, res, next) {
       method: 'get',
       maxBodyLength: Infinity,
       url: process.env.API_HOST_URI + '/perpetual/v1/ticker/24hr?symbol=' + data.symbol,
-      headers: { 
-        'Authorization': 'Bearer ' + token
-      }
+      headers: desktopHeaders
     })
     .then((response) => {
       return response.data;
@@ -238,10 +246,7 @@ router.post('/', async function(req, res, next) {
             method: 'post',
             maxBodyLength: Infinity,
             url: process.env.API_HOST_URI + '/perpetual/v1/order',
-            headers: { 
-              'Content-Type': 'application/json', 
-              'Authorization': 'Bearer ' + token
-            },
+            headers: desktopHeaders,
             data : JSON.stringify({
               "symbol": data.symbol,
               "side": data.side,
@@ -266,9 +271,7 @@ router.post('/', async function(req, res, next) {
               method: 'get',
               maxBodyLength: Infinity,
               url: process.env.API_HOST_URI + '/perpetual/v1/positions?status=OPEN',
-              headers: { 
-                'Authorization': 'Bearer ' + token
-              }
+              headers: desktopHeaders
             })
             .then((response) => {
               return response.data;
@@ -277,9 +280,7 @@ router.post('/', async function(req, res, next) {
               method: 'get',
               maxBodyLength: Infinity,
               url: process.env.API_HOST_URI + '/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED&symbol='+data.symbol,
-              headers: { 
-                'Authorization': 'Bearer ' + token
-              }
+              headers: desktopHeaders
             })
             .then((response) => {
               return response.data;
@@ -294,10 +295,7 @@ router.post('/', async function(req, res, next) {
               method: 'delete',
               maxBodyLength: Infinity,
               url: process.env.API_HOST_URI + '/perpetual/v1/order',
-              headers: { 
-                'Content-Type': 'application/json', 
-                'Authorization': 'Bearer ' + token
-              },
+              headers: desktopHeaders,
               data : JSON.stringify({
                 "id":tp.id,
                 "symbol":tp.symbol,
@@ -329,10 +327,7 @@ router.post('/', async function(req, res, next) {
                 method: 'post',
                 maxBodyLength: Infinity,
                 url: process.env.API_HOST_URI + '/perpetual/v1/order',
-                headers: { 
-                  'Content-Type': 'application/json', 
-                  'Authorization': 'Bearer ' + token
-                },
+                headers: desktopHeaders,
                 data : JSON.stringify({
                   "symbol": data.symbol,
                   "side": (data.side == 'BUY') ? 'SELL' : 'BUY',
@@ -360,10 +355,7 @@ router.post('/', async function(req, res, next) {
                 method: 'post',
                 maxBodyLength: Infinity,
                 url: process.env.API_HOST_URI + '/perpetual/v1/order',
-                headers: { 
-                  'Content-Type': 'application/json', 
-                  'Authorization': 'Bearer ' + token
-                },
+                headers: desktopHeaders,
                 data : JSON.stringify({
                   "symbol": data.symbol,
                   "side": (data.side == 'BUY') ? 'SELL' : 'BUY',
@@ -390,10 +382,7 @@ router.post('/', async function(req, res, next) {
                 method: 'delete',
                 maxBodyLength: Infinity,
                 url: process.env.API_HOST_URI + '/perpetual/v1/order',
-                headers: { 
-                  'Content-Type': 'application/json', 
-                  'Authorization': 'Bearer ' + token
-                },
+                headers:  desktopHeaders,
                 data : JSON.stringify({
                   "id":sl.id,
                   "symbol":sl.symbol,
@@ -433,20 +422,14 @@ router.post('/close', async function(req, res, next) {
       method: 'get',
       maxBodyLength: Infinity,
       url: process.env.API_AUTH_URI+ '/api/auth/session',
-      headers: {
-        "Content-Type": "application/json",
-        Cookie: data.cookie
-      }
+      headers: desktopHeaders
     });
-    const token = access.data.accessToken;
+    desktopHeaders['Authorization'] = 'Bearer ' + access.data.accessToken;
     const response = await axios.request({
       method: 'post',
       maxBodyLength: Infinity,
       url: process.env.API_HOST_URI + '/perpetual/v1/order',
-      headers: { 
-        'Content-Type': 'application/json', 
-        'Authorization': 'Bearer ' + token
-      },
+      headers: desktopHeaders,
       data : JSON.stringify({
         "symbol": symbol,
         "side": size < 0 ? 'BUY' : 'SELL',
@@ -483,19 +466,14 @@ router.post('/sld', async function(req, res, next) {
       method: 'get',
       maxBodyLength: Infinity,
       url: process.env.API_AUTH_URI+ '/api/auth/session',
-      headers: {
-        "Content-Type": "application/json",
-        Cookie: data.cookie
-      }
+      headers: desktopHeaders
     });
-    const token = access.data.accessToken;
+    desktopHeaders['Authorization'] = 'Bearer ' + access.data.accessToken;
     const valid = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
       url: process.env.API_HOST_URI + '/perpetual/v1/ticker/24hr?symbol=' + symbol,
-      headers: { 
-        'Authorization': 'Bearer ' + token
-      }
+      headers: desktopHeaders
     });
     const lastPrice = Number(valid.data.lastPrice);
     const sldMoney = percent/100 * margin;
@@ -510,9 +488,7 @@ router.post('/sld', async function(req, res, next) {
       method: 'get',
       maxBodyLength: Infinity,
       url: process.env.API_HOST_URI + '/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED&symbol='+symbol,
-      headers: { 
-        'Authorization': 'Bearer ' + token
-      }
+      headers: desktopHeaders
     });
     const sl = slRequest.data.find(x => x.closePosition && x.symbol == symbol && x.type == 'STOP');
     if (sl) {
@@ -520,10 +496,7 @@ router.post('/sld', async function(req, res, next) {
         method: 'delete',
         maxBodyLength: Infinity,
         url: process.env.API_HOST_URI + '/perpetual/v1/order',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': 'Bearer ' + token
-        },
+        headers: desktopHeaders,
         data : JSON.stringify({
           "id":sl.id,
           "symbol":symbol,
@@ -537,10 +510,7 @@ router.post('/sld', async function(req, res, next) {
       method: 'post',
       maxBodyLength: Infinity,
       url: process.env.API_HOST_URI + '/perpetual/v1/order',
-      headers: { 
-        'Content-Type': 'application/json', 
-        'Authorization': 'Bearer ' + token
-      },
+      headers: desktopHeaders,
       data : JSON.stringify({
         "symbol": symbol,
         "side": (side == 'BUY') ? 'SELL' : 'BUY',
@@ -565,7 +535,7 @@ router.post('/sld', async function(req, res, next) {
 
 async function botOnus(db, collection) {
   try {
-    const stopTrading = await limitTrader(collection, 3);
+    const stopTrading = await limitTradingByStopLoss(collection, 3);
     if (stopTrading) {
       return logger.warn(`Tín hiệu Bot đã chạm Stop Loss ${countStopLoss} lần!`);
     }
@@ -574,11 +544,7 @@ async function botOnus(db, collection) {
       method: 'get',
       maxBodyLength: Infinity,
       url: 'https://my-master.goonus.io/api/articles/bot-articles?status=OPEN&page=0&size=3',
-      headers: {
-        "Content-Type": "application/json",
-        "session-token": "8FRLFfiORmbnM6MyfXuv32qgWgHgCVts",
-        "Referer": "null"
-      },
+      headers: mobileHeaders,
     });
 
     if (list.data.length) {
@@ -626,7 +592,7 @@ async function botOnus(db, collection) {
 
 async function masterOnus(db, collection, masterId, abs = false) {
   try {
-    const stopTrading = await limitTrader(collection, 3, masterId);
+    const stopTrading = await limitTradingByStopLoss(collection, 3, masterId);
     if (stopTrading) {
       return logger.warn(`Tín hiệu Master đã chạm Stop Loss ${countStopLoss} lần!`);
     }
@@ -635,11 +601,7 @@ async function masterOnus(db, collection, masterId, abs = false) {
       method: 'get',
       maxBodyLength: Infinity,
       url: 'https://my-master.goonus.io/api/articles/getArticlesByUser?user_id='+masterId+'&page=0&size=3',
-      headers: {
-        "Content-Type": "application/json",
-        "session-token": "8FRLFfiORmbnM6MyfXuv32qgWgHgCVts",
-        "Referer": "null"
-      },
+      headers: mobileHeaders,
     });
 
     if (list.data.length) {
@@ -672,7 +634,7 @@ async function masterOnus(db, collection, masterId, abs = false) {
             axios.request({
               method: 'post',
               maxBodyLength: Infinity,
-              url: 'http://localhost:3000/?tp=20&sl=20',
+              url: 'https://trader.adaptable.app/?tp=20&sl=20',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -719,7 +681,7 @@ if (process.env.BOT == 'true') {
   })();
 }
 
-async function limitTrader(collection, limit = 3, masterId = false) {
+async function limitTradingByStopLoss(collection, limit = 3, masterId = false) {
   let count = 0;
   let where = {createdDate: {$gte: moment().startOf('day').unix(), $lt: moment().endOf('day').unix()}};
   if (masterId) where['user.id'] = masterId;
@@ -730,7 +692,6 @@ async function limitTrader(collection, limit = 3, masterId = false) {
       maxBodyLength: Infinity,
       url: process.env.API_AUTH_URI+ '/api/auth/session',
       headers: {
-        "Content-Type": "application/json",
         Cookie: data.cookie
       }
     });
