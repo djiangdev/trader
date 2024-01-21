@@ -10,7 +10,7 @@ logger.setLevel("info");
 logger.setDate(() => (moment()).format('LTS'));
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = "mongodb+srv://dinhgiang2611:"+process.env.MONGOGB_PASS+"@cluster0.lugbagm.mongodb.net/?retryWrites=true&w=majority";
+const uri = "mongodb+srv://"+process.env.DB_USER+":"+process.env.DB_PASS+"@cluster0.lugbagm.mongodb.net/?retryWrites=true&w=majority";
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -20,12 +20,12 @@ const client = new MongoClient(uri, {
   }
 });
 
-const budgetForBot = 15000;
+const budgetForBot = 10000;
 const tp = 20;
 const sl = 50;
 
 let data = {
-  cookie: process.env.COOKIES,
+  cookie: process.env.COOKIES_ONUS,
 };
 
 let mobileHeaders = {
@@ -60,21 +60,21 @@ router.get('/', function(req, res, next) {
 
 router.get('/list', async function(req, res, next) {
   try {
-    desktopHeaders['Origin'] = process.env.API_AUTH_URI;
-    desktopHeaders['Referer'] = process.env.API_AUTH_URI;
+    desktopHeaders['Origin'] = process.env.ONUS_API_AUTH_URI;
+    desktopHeaders['Referer'] = process.env.ONUS_API_AUTH_URI;
     const access = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: process.env.API_AUTH_URI+ '/api/auth/session',
+      url: process.env.ONUS_API_AUTH_URI+ '/api/auth/session',
       headers: desktopHeaders,
     });
-    desktopHeaders['Origin'] = process.env.API_HOST_URI;
-    desktopHeaders['Referer'] = process.env.API_HOST_URI;
+    desktopHeaders['Origin'] = process.env.ONUS_API_HOST_URI;
+    desktopHeaders['Referer'] = process.env.ONUS_API_HOST_URI;
     desktopHeaders['Authorization'] = 'Bearer ' + access.data.accessToken;
     const positions = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: process.env.API_HOST_URI + '/perpetual/v1/positions?status=OPEN',
+      url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/positions?status=OPEN',
       headers: desktopHeaders,
     });
     if (Object.keys(positions.data).length) {
@@ -84,7 +84,7 @@ router.get('/list', async function(req, res, next) {
           axios.request({
             method: 'get',
             maxBodyLength: Infinity,
-            url: process.env.API_HOST_URI + '/perpetual/v1/ticker/24hr?symbol=' + x.symbol,
+            url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/ticker/24hr?symbol=' + x.symbol,
             headers: desktopHeaders
           })
           .then((response) => {
@@ -101,34 +101,34 @@ router.get('/list', async function(req, res, next) {
     }
     res.send(positions.data);
   } catch (error) {
-    res.send(error.response.data);
+    res.send(error.response);
   }
 });
 
 router.get('/history', async function(req, res, next) {
   try {
-    desktopHeaders['Origin'] = process.env.API_AUTH_URI;
-    desktopHeaders['Referer'] = process.env.API_AUTH_URI;
+    desktopHeaders['Origin'] = process.env.ONUS_API_AUTH_URI;
+    desktopHeaders['Referer'] = process.env.ONUS_API_AUTH_URI;
     const access = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: process.env.API_AUTH_URI+ '/api/auth/session',
+      url: process.env.ONUS_API_AUTH_URI+ '/api/auth/session',
       headers: desktopHeaders
     });
-    desktopHeaders['Origin'] = process.env.API_HOST_URI;
-    desktopHeaders['Referer'] = process.env.API_HOST_URI;
+    desktopHeaders['Origin'] = process.env.ONUS_API_HOST_URI;
+    desktopHeaders['Referer'] = process.env.ONUS_API_HOST_URI;
     desktopHeaders['Authorization'] = 'Bearer ' + access.data.accessToken;
     const start = moment().startOf('day');
     const end = moment().endOf('day');
     const list = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: process.env.API_HOST_URI + '/perpetual/v1/fills?startTime='+start+'&endTime='+end,
+      url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/fills?startTime='+start+'&endTime='+end,
       headers: desktopHeaders
     });
     res.send(list.data.filter(x => x.realizedProfit != 0));
   } catch (error) {
-    res.send(error.response.data);
+    res.send(error.response);
   }
 });
 
@@ -151,7 +151,7 @@ router.post('/', async function(req, res, next) {
   const access = await axios.request({
     method: 'get',
     maxBodyLength: Infinity,
-    url: process.env.API_AUTH_URI+ '/api/auth/session',
+    url: process.env.ONUS_API_AUTH_URI+ '/api/auth/session',
     headers: desktopHeaders
   });
 
@@ -161,7 +161,7 @@ router.post('/', async function(req, res, next) {
     axios.request({
       method: 'post',
       maxBodyLength: Infinity,
-      url: process.env.API_HOST_URI + '/perpetual/v1/leverage',
+      url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/leverage',
       headers: desktopHeaders,
       data : JSON.stringify({
         "symbol": data.symbol,
@@ -174,7 +174,7 @@ router.post('/', async function(req, res, next) {
     axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: process.env.API_HOST_URI + '/perpetual/v1/ticker/24hr?symbol=' + data.symbol,
+      url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/ticker/24hr?symbol=' + data.symbol,
       headers: desktopHeaders
     })
     .then((response) => {
@@ -192,7 +192,7 @@ router.post('/', async function(req, res, next) {
           await axios.request({
             method: 'post',
             maxBodyLength: Infinity,
-            url: process.env.API_HOST_URI + '/perpetual/v1/order',
+            url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/order',
             headers: { 
               'Content-Type': 'application/json', 
               'Authorization': 'Bearer ' + token
@@ -217,7 +217,7 @@ router.post('/', async function(req, res, next) {
           await axios.request({
             method: 'post',
             maxBodyLength: Infinity,
-            url: process.env.API_HOST_URI + '/perpetual/v1/order',
+            url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/order',
             headers: { 
               'Content-Type': 'application/json', 
               'Authorization': 'Bearer ' + token
@@ -245,7 +245,7 @@ router.post('/', async function(req, res, next) {
           const order = await axios.request({
             method: 'post',
             maxBodyLength: Infinity,
-            url: process.env.API_HOST_URI + '/perpetual/v1/order',
+            url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/order',
             headers: desktopHeaders,
             data : JSON.stringify({
               "symbol": data.symbol,
@@ -270,7 +270,7 @@ router.post('/', async function(req, res, next) {
             axios.request({
               method: 'get',
               maxBodyLength: Infinity,
-              url: process.env.API_HOST_URI + '/perpetual/v1/positions?status=OPEN',
+              url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/positions?status=OPEN',
               headers: desktopHeaders
             })
             .then((response) => {
@@ -279,7 +279,7 @@ router.post('/', async function(req, res, next) {
             axios.request({
               method: 'get',
               maxBodyLength: Infinity,
-              url: process.env.API_HOST_URI + '/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED&symbol='+data.symbol,
+              url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED&symbol='+data.symbol,
               headers: desktopHeaders
             })
             .then((response) => {
@@ -294,7 +294,7 @@ router.post('/', async function(req, res, next) {
             await axios.request({
               method: 'delete',
               maxBodyLength: Infinity,
-              url: process.env.API_HOST_URI + '/perpetual/v1/order',
+              url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/order',
               headers: desktopHeaders,
               data : JSON.stringify({
                 "id":tp.id,
@@ -326,7 +326,7 @@ router.post('/', async function(req, res, next) {
               axios.request({
                 method: 'post',
                 maxBodyLength: Infinity,
-                url: process.env.API_HOST_URI + '/perpetual/v1/order',
+                url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/order',
                 headers: desktopHeaders,
                 data : JSON.stringify({
                   "symbol": data.symbol,
@@ -354,7 +354,7 @@ router.post('/', async function(req, res, next) {
               axios.request({
                 method: 'post',
                 maxBodyLength: Infinity,
-                url: process.env.API_HOST_URI + '/perpetual/v1/order',
+                url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/order',
                 headers: desktopHeaders,
                 data : JSON.stringify({
                   "symbol": data.symbol,
@@ -381,7 +381,7 @@ router.post('/', async function(req, res, next) {
             processes.push(axios.request({
                 method: 'delete',
                 maxBodyLength: Infinity,
-                url: process.env.API_HOST_URI + '/perpetual/v1/order',
+                url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/order',
                 headers:  desktopHeaders,
                 data : JSON.stringify({
                   "id":sl.id,
@@ -421,14 +421,14 @@ router.post('/close', async function(req, res, next) {
     const access = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: process.env.API_AUTH_URI+ '/api/auth/session',
+      url: process.env.ONUS_API_AUTH_URI+ '/api/auth/session',
       headers: desktopHeaders
     });
     desktopHeaders['Authorization'] = 'Bearer ' + access.data.accessToken;
     const response = await axios.request({
       method: 'post',
       maxBodyLength: Infinity,
-      url: process.env.API_HOST_URI + '/perpetual/v1/order',
+      url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/order',
       headers: desktopHeaders,
       data : JSON.stringify({
         "symbol": symbol,
@@ -465,14 +465,14 @@ router.post('/sld', async function(req, res, next) {
     const access = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: process.env.API_AUTH_URI+ '/api/auth/session',
+      url: process.env.ONUS_API_AUTH_URI+ '/api/auth/session',
       headers: desktopHeaders
     });
     desktopHeaders['Authorization'] = 'Bearer ' + access.data.accessToken;
     const valid = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: process.env.API_HOST_URI + '/perpetual/v1/ticker/24hr?symbol=' + symbol,
+      url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/ticker/24hr?symbol=' + symbol,
       headers: desktopHeaders
     });
     const lastPrice = Number(valid.data.lastPrice);
@@ -487,7 +487,7 @@ router.post('/sld', async function(req, res, next) {
     const slRequest = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: process.env.API_HOST_URI + '/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED&symbol='+symbol,
+      url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/orders?status=OPEN&status=UNTRIGGERED&symbol='+symbol,
       headers: desktopHeaders
     });
     const sl = slRequest.data.find(x => x.closePosition && x.symbol == symbol && x.type == 'STOP');
@@ -495,7 +495,7 @@ router.post('/sld', async function(req, res, next) {
       await axios.request({
         method: 'delete',
         maxBodyLength: Infinity,
-        url: process.env.API_HOST_URI + '/perpetual/v1/order',
+        url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/order',
         headers: desktopHeaders,
         data : JSON.stringify({
           "id":sl.id,
@@ -509,7 +509,7 @@ router.post('/sld', async function(req, res, next) {
     const response = await axios.request({
       method: 'post',
       maxBodyLength: Infinity,
-      url: process.env.API_HOST_URI + '/perpetual/v1/order',
+      url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/order',
       headers: desktopHeaders,
       data : JSON.stringify({
         "symbol": symbol,
@@ -551,13 +551,13 @@ async function botOnus(db, collection) {
       await Promise.all(list.data.map(async (x) => {
         const filtered = await collection.find({id: x.id}).toArray();
         if (filtered.length) {
-          logger.info('-------------------------------------------------------------------------------');
-          const date = new Date(filtered[0].createdDate * 1000);
-          const datevalues = `${date.getHours()}:${date.getMinutes()} ${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()}`;
-          logger.info(`Existed [${x.user.name}] ${x.title} => [${x.id}] at ${datevalues}`);
+          // logger.info('-------------------------------------------------------------------------------');
+          // const date = new Date(filtered[0].createdDate * 1000);
+          // const datevalues = `${date.getHours()}:${date.getMinutes()} ${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()}`;
+          // logger.info(`Existed [${x.user.name}] ${x.title} => [${x.id}] at ${datevalues}`);
         } else {
           const inserted = await collection.insertMany([x]);
-          logger.info(`Inserted [${x.user.name}] ${x.title} =>`, x);
+          logger.info(`Inserted [${x.user.name}] ${x.title} =>`, JSON.stringify(x));
           const data = {
             type: 'MARKET',
             side: (x.futures == 'SHORT') ? 'SELL' : 'BUY',
@@ -609,13 +609,13 @@ async function masterOnus(db, collection, masterId, abs = false) {
         if (x.trans == 'ONUS_FUTURES') {
           const filtered = await collection.find({id: x.id}).toArray();
           if (filtered.length) {
-            logger.info('-------------------------------------------------------------------------------');
-            const date = new Date(filtered[0].createdDate * 1000);
-            const datevalues = `${date.getHours()}:${date.getMinutes()} ${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()}`;
-            logger.info(`Existed **${x.user.name}** ${x.content} => [${x.id}] at ${datevalues}`);
+            // logger.info('-------------------------------------------------------------------------------');
+            // const date = new Date(filtered[0].createdDate * 1000);
+            // const datevalues = `${date.getHours()}:${date.getMinutes()} ${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()}`;
+            // logger.info(`Existed **${x.user.name}** ${x.content} => [${x.id}] at ${datevalues}`);
           } else {
             const inserted = await collection.insertMany([x]);
-            logger.info(`Inserted [${x.user.name}] ${x.content} =>`, x);
+            logger.info(`Inserted [${x.user.name}] ${x.content} =>`, JSON.stringify(x));
 
             let side = (x.futures == 'SHORT') ? 'SELL' : 'BUY';
             if (abs && side == 'SELL') side = 'BUY';
@@ -655,29 +655,29 @@ async function masterOnus(db, collection, masterId, abs = false) {
 
 if (process.env.BOT == 'true') {
   (async () => {
-    await client.connect();
-    logger.info('Connected successfully to database');
+    // await client.connect();
+    // logger.info('Connected successfully to database');
 
-    const dbBot = client.db('bots');
-    cron.schedule('*/5 * * * * *', async () => {
-      try {
-        botOnus(dbBot, dbBot.collection('documents'))
-        .catch(logger.dir);
-      } catch (error) {
-        logger.info(error);
-      }
-    });
+    // const dbBot = client.db('bots');
+    // cron.schedule('*/5 * * * * *', async () => {
+    //   try {
+    //     botOnus(dbBot, dbBot.collection('documents'))
+    //     .catch(logger.dir);
+    //   } catch (error) {
+    //     logger.info(error);
+    //   }
+    // });
 
-    const dbMaster = client.db('masters');
-    cron.schedule('*/10 * * * * *', async () => {
-      try {
-        // Duong_Tri_MMO
-        masterOnus(dbMaster, dbMaster.collection('documents'), '6277729709683058590', abs = true)
-        .catch(logger.dir);
-      } catch (error) {
-        logger.info(error);
-      }
-    });
+    // const dbMaster = client.db('masters');
+    // cron.schedule('*/10 * * * * *', async () => {
+    //   try {
+    //     // Duong_Tri_MMO
+    //     masterOnus(dbMaster, dbMaster.collection('documents'), '6277729709683058590', abs = true)
+    //     .catch(logger.dir);
+    //   } catch (error) {
+    //     logger.info(error);
+    //   }
+    // });
   })();
 }
 
@@ -690,7 +690,7 @@ async function limitTradingByStopLoss(collection, limit = 3, masterId = false) {
     const access = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: process.env.API_AUTH_URI+ '/api/auth/session',
+      url: process.env.ONUS_API_AUTH_URI+ '/api/auth/session',
       headers: {
         Cookie: data.cookie
       }
@@ -698,7 +698,7 @@ async function limitTradingByStopLoss(collection, limit = 3, masterId = false) {
     const list = await axios.request({
       method: 'get',
       maxBodyLength: Infinity,
-      url: process.env.API_HOST_URI + '/perpetual/v1/fills?startTime='+moment().startOf('day')+'&endTime='+moment().endOf('day'),
+      url: process.env.ONUS_API_HOST_URI + '/perpetual/v1/fills?startTime='+moment().startOf('day')+'&endTime='+moment().endOf('day'),
       headers: { 
         'Authorization': 'Bearer ' + access.data.accessToken
       }
