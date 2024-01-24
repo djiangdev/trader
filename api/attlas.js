@@ -1,4 +1,6 @@
 const axios = require('axios');
+const moment = require('moment-timezone');
+moment.tz.setDefault('Asia/Ho_Chi_Minh');
 const logger = require('node-color-log');
 logger.setLevel("info");
 logger.setDate(() => (moment()).format('LTS'));
@@ -21,7 +23,7 @@ async function get_positions() {
         const response = await axios.request(config);
         return response.data;
     } catch (error) {
-        logger.error(JSON.stringify(error.response.data));
+        logger.error(JSON.stringify(error));
         return error;
     }
 }
@@ -46,7 +48,7 @@ async function set_margin_mode() {
         const response = await axios.request(config);
         return response.data;
     } catch (error) {
-        logger.error(JSON.stringify(error.response.data));
+        logger.error(JSON.stringify(error));
         return error;
     }
 }
@@ -72,7 +74,7 @@ async function set_leverage(symbol, leverage) {
         const response = await axios.request(config);
         return response.data;
     } catch (error) {
-        logger.error(JSON.stringify(error.response.data));
+        logger.error(JSON.stringify(error));
         return error;
     }
 }
@@ -119,7 +121,7 @@ async function open_order(symbol, side, volume, tp = false, sl = false, type = '
         const response = await axios.request(config);
         return response.data;
     } catch (error) {
-        logger.error(JSON.stringify(error.response.data));
+        logger.error(JSON.stringify(error));
         return error;
     }
 }
@@ -148,7 +150,7 @@ async function close_order(symbol, side, quantity = 9999, type = 'MARKET') {
         const response = await axios.request(config);
         return response.data;
     } catch (error) {
-        logger.error(JSON.stringify(error.response.data));
+        logger.error(JSON.stringify(error));
         return error;
     }
 }

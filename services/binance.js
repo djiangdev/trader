@@ -5,11 +5,13 @@ const router = express.Router();
 const cron = require('node-cron');
 const moment = require('moment-timezone');
 moment.tz.setDefault('Asia/Ho_Chi_Minh');
+const Func = require('../functions');
 const attlasAPI = require('../api/attlas');
 const bybitAPI = require('../api/bybit');
 const binanceAPI = require('../api/binance');
 const logger = require('node-color-log');
-logger.setDate(() => (moment()).format('LTS'));
+const logger1 = logger.createNamedLogger("BNB");
+logger1.setDate(() => moment().format('YYYY-MM-DD HH:mm:ss'));
 
 const dbUri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.lugbagm.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(dbUri, {
@@ -20,1267 +22,146 @@ const client = new MongoClient(dbUri, {
     }
 });
 
-const minSizes = [
-    {
-      "symbol": "1000000VINUUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "10000LADYSUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "10000NFTUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "10000SATSUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "10000STARLUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "1000BONKUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "1000BTTUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "1000FLOKIUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "1000LUNCUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "1000PEPEUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "1000RATSUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "1000XECUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "1CATUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "1INCHUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "AAVEUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "ACEUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "ACHUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "ADAUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "AERGOUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "AGIUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "AGIXUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "AGLDUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "AIUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "AKROUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "ALGOUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "ALICEUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "ALPACAUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "ALPHAUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "AMBUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "ANKRUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "ANTUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "APEUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "API3USDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "APTUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "ARBUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "ARKMUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "ARKUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "ARPAUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "ARUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "ASTRUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "ATAUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "ATOMUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "AUCTIONUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "AUDIOUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "AVAXUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "AXLUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "AXSUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "BADGERUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "BAKEUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "BALUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "BANDUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "BATUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "BCHUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "BEAMUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "BELUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "BIGTIMEUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "BLURUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "BLZUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "BNBUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "BNTUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "BNXUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "BOBAUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "BONDUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "BSVUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "BSWUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "BTCUSDT",
-      "minSize": 0.001
-    },
-    {
-      "symbol": "C98USDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "CAKEUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "CEEKUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "CELOUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "CELRUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "CFXUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "CHZUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "CKBUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "COMBOUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "COMPUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "COREUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "COTIUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "CROUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "CRVUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "CTCUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "CTKUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "CTSIUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "CVCUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "CVXUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "CYBERUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "DARUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "DASHUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "DATAUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "DENTUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "DGBUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "DODOUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "DOGEUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "DOTUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "DUSKUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "DYDXUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "EDUUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "EGLDUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "ENJUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "ENSUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "EOSUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "ETCUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "ETHUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "ETHWUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "FETUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "FILUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "FITFIUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "FLMUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "FLOWUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "FLRUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "FORTHUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "FRONTUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "FTMUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "FUNUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "FXSUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "GALAUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "GASUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "GFTUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "GLMRUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "GLMUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "GMTUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "GMXUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "GODSUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "GPTUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "GRTUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "HBARUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "HFTUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "HIFIUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "HIGHUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "HNTUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "HOOKUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "HOTUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "ICPUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "ICXUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "IDEXUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "IDUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "ILVUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "IMXUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "INJUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "IOSTUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "IOTAUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "IOTXUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "JASMYUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "JOEUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "JSTUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "JTOUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "KASUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "KAVAUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "KDAUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "KEYUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "KLAYUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "KNCUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "KSMUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "LDOUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "LEVERUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "LINAUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "LINKUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "LITUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "LOOKSUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "LOOMUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "LPTUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "LQTYUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "LRCUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "LSKUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "LTCUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "LUNA2USDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "MAGICUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "MANAUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "MASKUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "MATICUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "MAVUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "MBLUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "MDTUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "MEMEUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "METISUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "MINAUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "MKRUSDT",
-      "minSize": 0.001
-    },
-    {
-      "symbol": "MNTUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "MOVRUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "MTLUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "MULTIUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "MYRIAUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "NEARUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "NEOUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "NFPUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "NKNUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "NMRUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "NTRNUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "OCEANUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "OGNUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "OGUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "OMGUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "ONEUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "ONGUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "ONTUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "OPUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "ORBSUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "ORDIUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "OXTUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "PAXGUSDT",
-      "minSize": 0.001
-    },
-    {
-      "symbol": "PENDLEUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "PEOPLEUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "PERPUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "PHBUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "POLYXUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "POWRUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "PROMUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "PYTHUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "QIUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "QNTUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "QTUMUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "RADUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "RAREUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "RAYUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "RDNTUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "REEFUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "RENUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "RIFUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "RLCUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "RNDRUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "ROSEUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "RPLUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "RSRUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "RUNEUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "SANDUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "SEIUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "SFPUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "SHIB1000USDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "SILLYUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "SKLUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "SLPUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "SNTUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "SNXUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "SOLUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "SSVUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "STEEMUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "STGUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "STORJUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "STPTUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "STRAXUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "SUIUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "SUNUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "SUPERUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "SUSHIUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "SWEATUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "SXPUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "THETAUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "TIAUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "TLMUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "TOKENUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "TOMIUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "TONUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "TRBUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "TRUUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "TRXUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "TUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "TWTUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "UMAUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "UNIUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "USDCUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "USTCUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "VETUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "VGXUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "VRAUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "WAVESUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "WAXPUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "WIFUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "WLDUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "WOOUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "WSMUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "XAIUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "XEMUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "XLMUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "XMRUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "XRDUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "XRPUSDT",
-      "minSize": 1
-    },
-    {
-      "symbol": "XTZUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "XVGUSDT",
-      "minSize": 100
-    },
-    {
-      "symbol": "XVSUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "YFIIUSDT",
-      "minSize": 0.001
-    },
-    {
-      "symbol": "YFIUSDT",
-      "minSize": 0.0001
-    },
-    {
-      "symbol": "YGGUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "ZECUSDT",
-      "minSize": 0.01
-    },
-    {
-      "symbol": "ZENUSDT",
-      "minSize": 0.1
-    },
-    {
-      "symbol": "ZILUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "ZKFUSDT",
-      "minSize": 10
-    },
-    {
-      "symbol": "ZRXUSDT",
-      "minSize": 1
-    }
-];
-
+const minSizes = Func.get_coin_sizes();
 let myBudget = 50; // USDT
-let masterBudget = 200000; // USDT
-let unitRate = 1; // % vs Master
+let scaleRate = 1; // % Master
 let maxContracts = 10; // 10
-let maxAmountPerOrder = 0.8; // USDT
+let maxAmountPerOrder = 0.5; // USDT
 let currentPositions = [];
 let logs = [];
 
+const MASTERS = [
+  {
+    id: '3782690787637792000',
+    name: 'SnowAlex',
+    leverage: 20,
+    balance: 35000,
+  }
+];
+
 (async () => {
-    await client.connect();
+    await Promise.all([
+      client.connect(),
+      listPositions()
+    ])
+
     const db = client.db('binance');
 
-    cron.schedule('*/5 * * * * *', async () => {
-        placeOrder(db);
-    });
-
-    listPositions();
     cron.schedule('*/30 * * * * *', async () => {
         listPositions();
     });
 
-    // await attlasAPI.set_leverage('BTCVNDC', 50);
-    // const result = await attlasAPI.open_order('BTCVNDC', 'SELL', 20000, 5, -5);
+    cron.schedule('*/8 * * * * *', async () => {
+      for (let index = 0; index < MASTERS.length; index++) {
+        const item = MASTERS[index];
+        placeOrder(db, item.id, item.balance, item.leverage);
+      }
+    });
 })();
 
-async function placeOrder(db) {
-    try {
-        const result = await binanceAPI.trade_history();
-        if (result.success && result.data.list.length) {
-            const data = await filterData(db, result.data.list);
-            if (data.length) {
-                await Promise.all(data.map( async (x, index) => {
-                    let symbol = x.order.split('/')[0];
-                    let side = x.order.split('/')[1];
-                    let time = x.order.split('/')[2];
-                    let price = result.data.list.find(k => symbol == k.symbol && side == k.side)['price'];
-                    let leverage = 1;
-                    let masterSize = x.qty;
-                    let masterAmount = (masterSize*price)/leverage;
-                    let masterRate = (masterAmount/masterBudget)*100;
-                    let myAmount = (unitRate*masterRate*myBudget)/100;
-                    let mySize = (myAmount*leverage)/price;
-                    let coin = minSizes.find(z => symbol == z.symbol);
-                    side = (side == 'BUY') ? 'Buy' : 'Sell';
-                    masterSize = formatSize(masterSize, coin.minSize);
-                    mySize = formatSize(mySize, coin.minSize);
-                    if (mySize >= coin.minSize) {
-                        const checkOrderExists = await db.collection('orders').find({order: x.order}).toArray();
-                        if (!checkOrderExists.length) {
-                            let markPrice;
-                            const exist = currentPositions.find(z => z.symbol == symbol && z.side == side);
-                            if (exist) {
-                              markPrice = Number(exist.markPrice);
-                              if (!isDCA(symbol, side, exist.avgPrice, markPrice)) {
-                                return;
-                              }
-                            } else {
-                              const ticker = await bybitAPI.get_ticker(symbol);
-                              markPrice = Number(ticker.result.list[0].markPrice);
-                              if (!isDCA(symbol, side, price, markPrice)) {
-                                  return;
-                              }
-                            }
-                            x.time = moment(new Date(Number(time))).unix();
-                            await db.collection('orders').insertMany([x]);
-                            const positionIdx = (side == 'Buy') ? 1 : 2;
-                            await bybitAPI.place_order('{"category":"linear","symbol":"'+symbol+'","side": "'+side+'","orderType": "Limit", "price": "'+markPrice+'","qty": "'+mySize+'","positionIdx":'+positionIdx+'}');
-                            logger.info((index+1) +': '+ x.order +'('+coin.minSize+')  Master('+ masterSize +'-$'+masterAmount.toFixed(2) + ')  Me(' + mySize +'-$'+myAmount.toFixed(2)+')');
+async function placeOrder(db, masterId, budget, leverage = 10) {
+    const result = await binanceAPI.trade_history(masterId);
+    if (result.success && result.data.list.length) {
+        takeProfit(db, result.data.list, masterId);
+        var noProfits = result.data.list.filter(x => x.realizedProfit == 0);
+        const data = await filterData(db, noProfits);
+        if (data.length) {
+            await Promise.all(data.map( async (x, index) => {
+                x.sort_time = moment().unix();
+                let symbol = x.order.split('/')[0];
+                let side = x.order.split('/')[1];
+                let time = x.order.split('/')[2];
+                let price = result.data.list.find(k => symbol == k.symbol && side == k.side)['price'];
+                let coin = minSizes.find(z => symbol == z.symbol);
+                if (!coin) return;
+                let masterSize = x.qty;
+                let masterAmount = (masterSize*price)/leverage;
+                let masterRate = (masterAmount/budget)*100;
+                let myAmount = (masterRate*myBudget)/100;
+                let mySize = (scaleRate*myAmount*leverage)/price;
+                side = (side == 'BUY') ? 'Buy' : 'Sell';
+                mySize = (mySize < coin.minSize) ? coin.minSize : mySize;
+                masterSize = formatSize(masterSize, coin.minSize);
+                mySize = formatSize(mySize, coin.minSize);
+                myAmount = (price*mySize)/leverage;
+                if (myAmount <= maxAmountPerOrder) {
+                    const [checkOrderExists, positionByMasters] = await Promise.all([
+                      db.collection('orders').find({order: x.order}).toArray(),
+                      client.db('bybit').collection('positions').find({master_id: masterId, symbol: symbol, side: side}).toArray()
+                    ]);
+                    if (!checkOrderExists.length) {
+                      const exist = currentPositions.find(z => z.symbol == symbol && z.side == side);
+                      if (exist) {
+                        if (!positionByMasters.length) return;
+                        const ticker = await bybitAPI.get_ticker(symbol);
+                        const lastPrice = ticker.result.list ? ticker.result.list[0].lastPrice : price;
+                        if (!isDCA(masterId, symbol, side, exist.avgPrice, lastPrice)) {
+                          return;
                         }
-                    } else {
-                      const formatTime = moment.unix(time).format('YYYY-MM-DD HH:mm:ss');
-                      showLog(`${x.order} (${formatTime}) không đủ size: ${mySize} < ${coin.minSize}`, 'warn');
+                      }
+                      x.time = moment(new Date(Number(time))).unix();
+                      db.collection('orders').insertMany([x]);
+                      const positionIdx = (side == 'Buy') ? 1 : 2;
+                      let promises = [
+                        client.db('bybit').collection('positions').insertMany([{master_id: masterId, symbol: symbol, side: side, sort_time: x.sort_time}]),
+                      ];
+                      if (exist) {
+                        myAmount = (exist.avgPrice*mySize)/leverage;
+                        Func.show_order_log('BNB', get_master(masterId).name, symbol, side, coin.minSize, masterSize, mySize, masterAmount, myAmount, false, exist.avgPrice);
+                        promises.push(bybitAPI.place_order('{"category":"linear","symbol":"'+symbol+'","side": "'+side+'","orderType": "Market","qty": "'+mySize+'","positionIdx":'+positionIdx+'}'));
+                      } else {
+                        await bybitAPI.set_leverage(symbol, leverage);
+                        Func.show_order_log('BNB', get_master(masterId).name, symbol, side, coin.minSize, masterSize, mySize, masterAmount, myAmount, price, false);
+                        promises.push(bybitAPI.place_order('{"category":"linear","symbol":"'+symbol+'","side": "'+side+'","orderType": "Limit", "price": "'+price+'","qty": "'+mySize+'","positionIdx":'+positionIdx+'}'));
+                      }
+                      Promise.all(promises);
                     }
-                }));
-            }
-            takeProfit(db, result.data.list);
+                } else {
+                  const formatTime = moment.unix(time).format('YYYY-MM-DD HH:mm:ss');
+                  showLog(`[${get_master(masterId).name}] ${x.order} (${formatTime}) số tiền không được vượt quá $${maxAmountPerOrder}: $${myAmount}`, 'warn');
+                }
+            }));
         }
-    } catch (error) {
-        logger.error(JSON.stringify(error));
-        return error;
     }
 };
 
-async function takeProfit(db, results) {
-    try {
-        var filtered = results.filter(x => x.realizedProfit != 0);
-        var histories = distinct(filtered, ['time']);
-        if (histories.length) {
-          await Promise.all(histories.map( async (x, index) => {
-              x.time = moment(new Date(Number(x.time))).unix();
-              const positionSide = (x.side == 'BUY') ? 'Sell' : 'Buy';
-              const exist = currentPositions.find(z => z.symbol == x.symbol && z.side == positionSide);
-              if (exist) {
-                  const updatedTime = moment(new Date(Number(exist.updatedTime))).unix();
-                  if (updatedTime < x.time) {
-                      const checkHistoryExists = await db.collection('history').find({side: x.side, symbol: x.symbol, time: x.time}).toArray();
-                      if (!checkHistoryExists.length) {
-                          await db.collection('history').insertMany([x]);
-                          const closeSide = (exist.side == 'Buy') ? 'Sell' : 'Buy';
-                          const positionIdx = (exist.side == 'Buy') ? 1 : 2;
-                          await bybitAPI.place_order('{"category":"linear","symbol":"'+x.symbol+'","side": "'+closeSide+'","orderType": "Market","qty": "'+exist.size+'","positionIdx":'+positionIdx+',"reduceOnly":true}');
-                          logger.info(x.symbol + ' ('+ x.side +')' + ' đóng PNL !');
-                      }
-                  }
-              }
-          }));
-        }
-    } catch (error) {
-        logger.error(JSON.stringify(error));
-        return error;
+async function takeProfit(db, results, masterId) {
+    var profits = results.filter(x => x.realizedProfit != 0);
+    var histories = distinct(profits, ['time']);
+    if (histories.length) {
+      await Promise.all(histories.map( async (x, index) => {
+          x.sort_time = moment().unix();
+          x.time = moment(new Date(Number(x.time))).unix();
+          const positionSide = (x.side == 'BUY') ? 'Sell' : 'Buy';
+          const [checkHistoryExists, positionByMasters] = await Promise.all([
+            db.collection('history').find({side: x.side, symbol: x.symbol, time: x.time}).toArray(),
+            client.db('bybit').collection('positions').find({master_id: masterId, symbol: x.symbol, side: positionSide}).toArray()
+          ]);
+          if (!checkHistoryExists.length && positionByMasters.length) {
+            const exist = currentPositions.find(z => z.symbol == x.symbol && z.side == positionSide);
+            if (exist) {
+              const positionIdx = (positionSide == 'Buy') ? 1 : 2;
+              const closeSide = (positionSide == 'Buy') ? 'Sell' : 'Buy';
+              await Promise.all([
+                db.collection('history').insertMany([x]),
+                client.db('bybit').collection('positions').deleteMany({ master_id: masterId, symbol: x.symbol, side: positionSide }),
+                bybitAPI.place_order('{"category":"linear","symbol":"'+x.symbol+'","side": "'+closeSide+'","orderType": "Market","qty": "'+exist.size+'","positionIdx":'+positionIdx+',"reduceOnly":true}'),
+                closeOpenOrders(exist.symbol, positionSide),
+              ]);
+              setTimeout( async () => {
+                const [ pnl, sumProfits ] = await Promise.all([
+                  bybitAPI.get_pnl(x.symbol),
+                  filterData(db, profits),
+                ]);
+                const sumQty = sumProfits.find(z => z.order.includes(`${x.symbol}/${x.side}`));
+                Func.show_history_log('BNB', get_master(masterId).name, x.symbol, positionSide, sumQty.qty, '$', pnl.result.list[0].closedPnl, '$');
+              }, 1000);
+            } else {
+              closeOpenOrders(x.symbol, positionSide);
+              db.collection('history').insertMany([x]);
+            }
+          }
+      }));
     }
 }
 
@@ -1289,15 +170,15 @@ async function listPositions() {
     if (list.retCode == 0 && list.result.list.length) {
         currentPositions = list.result.list;
     }
+    return currentPositions;
 }
 
 async function filterData(db, results) {
     let data = [];
     var holder = {};
-    var filtered = results.filter(x => x.realizedProfit == 0);
 
     await Promise.all(
-        filtered.map( async (x) => {
+      results.map( async (x) => {
             x.time = moment(new Date(Number(x.time))).unix();
             const key = x.symbol+'/'+x.side +'/'+x.time;
             if (holder.hasOwnProperty(key)) {
@@ -1312,24 +193,36 @@ async function filterData(db, results) {
         data.push({ order: prop, qty: holder[prop] });
     }
 
-    if (currentPositions.length) {
-        maxContracts = maxContracts - currentPositions.length;
-    }
-
-    let list = [];
-    for (let index = 0; index < maxContracts; index++) {
-        if (data[index]) list.push(data[index]);
-    }
-  
-    return list;
+    return data;
 }
 
-function isDCA(symbol, side, entry, market) {
+async function closeOpenOrders(symbol, side) {
+  try {
+    let requestData = [];
+    const open_orders = await bybitAPI.open_orders(symbol);
+    if (open_orders && open_orders.result.list && open_orders.result.list.length) {
+      open_orders.result.list.forEach(z => {
+        if (z.symbol == symbol && z.side == side) {
+          requestData.push({ symbol: z.symbol, orderId: z.orderId });
+        }
+      });
+    }
+    if (requestData.length) {
+      await bybitAPI.cancel_orders(requestData);
+    }
+    return true;
+  } catch (error) {
+    logger.error(JSON.stringify(error));
+    return error;
+  }
+}
+
+function isDCA(masterId, symbol, side, entryPrice, lastPrice) {
     if (
-        (side == 'Sell' && Number(market) <= Number(entry)) || 
-        (side == 'Buy' && Number(market) >= Number(entry))
+        (side == 'Sell' && Number(lastPrice) <= Number(entryPrice)) || 
+        (side == 'Buy' && Number(lastPrice) >= Number(entryPrice))
     ) {
-        showLog(symbol+'('+side+'): (Entry: '+entry+') DCA không hợp lệ!', 'warn');
+        showLog('['+get_master(masterId)['name']+'] '+symbol+' ('+side+'): (My Entry: '+entryPrice+') không nên vào lúc này :)', 'warn');
         return false;
     }
     return true;
@@ -1347,23 +240,23 @@ function showLog(message, type = false) {
         logs.push(message);
         switch (type) {
             case 'success':
-                logger.success(message);
+              logger1.success(message);
                 break;
 
             case 'info':
-                logger.info(message);
+              logger1.info(message);
                 break;
 
             case 'warn':
-                logger.warn(message);
+              logger1.warn(message);
                 break;
 
             case 'error':
-                logger.error(message);
+              logger1.error(message);
                 break;
         
             default:
-                logger.log(message);
+              logger1.log(message);
                 break;
         }
     }
@@ -1383,4 +276,8 @@ function distinct(arr, fields = []) {
         }
     }, Object.create(null));
     return result;
+}
+
+function get_master(id) {
+  return MASTERS.find(x => x.id == id);
 }

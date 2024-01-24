@@ -1,11 +1,12 @@
 const axios = require('axios');
+const moment = require('moment-timezone');
+moment.tz.setDefault('Asia/Ho_Chi_Minh');
 const logger = require('node-color-log');
-logger.setDate(() => (moment()).format('LTS'));
+logger.setDate(() => moment().format('LTS'));
 
 let logs = [];
-let portfolioId = "3739207487989583617";
 
-async function trade_history() {
+async function trade_history(portfolioId) {
     try {
         let config = {
             method: 'post',
@@ -14,13 +15,17 @@ async function trade_history() {
             headers: { 
                 'Content-Type': 'application/json'
             },
-            data: JSON.stringify({pageNumber:1,pageSize:20,portfolioId:portfolioId})
+            data: JSON.stringify({
+                pageNumber: 1,
+                pageSize: 50,
+                portfolioId: portfolioId
+            })
         };
         showLog("Binance Copy Trading History Calling....");
         const response = await axios.request(config);
         return response.data;
     } catch (error) {
-        logger.error(JSON.stringify(error.response.data));
+        logger.error(JSON.stringify(error));
         return error;
     }
 }

@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const axios = require('axios');
 const express = require('express');
 const router = express.Router();
+const bybitAPI = require('../api/bybit');
 
 const url=process.env.BYBIT_API_URI;
 const apiKey = process.env.BYBIT_API_KEY;
@@ -12,7 +13,7 @@ const timestamp = Date.now().toString();
 router.get('/list', async function(req, res, next) {
     try {
         const endpoint="/v5/position/list"
-        const data = 'category=linear&settleCoin=USDT';
+        const data = 'category=linear&settleCoin=USDT&symbol=AVAXUSDT';
         http_request(endpoint,"GET",data,"Order List", function(results) {
             let positionIM = 0;
             let unrealisedPnl = 0;
@@ -30,6 +31,18 @@ router.get('/list', async function(req, res, next) {
     }
 });
 
+router.get('/open_order', async function(req, res, next) {
+  try {
+      const endpoint="/v5/order/realtime"
+      const data = 'category=linear&settleCoin=USDT&symbol=';
+      http_request(endpoint,"GET",data,"Open Orders", function(results) {
+          res.send(results);
+      });
+  } catch (error) {
+      console.log(error);
+  }
+});
+
 router.get('/history', async function(req, res, next) {
     try {
         const endpoint="/v5/order/history"
@@ -45,7 +58,7 @@ router.get('/history', async function(req, res, next) {
 router.get('/create', async function(req, res, next) {
     try {
         const endpoint="/v5/order/create";
-        const data = '{"category":"linear","symbol":"LINKUSDT","side": "Sell","orderType": "Market","qty": "0.1","positionIdx":2}';
+        const data = '{"category":"linear","symbol":"NEARUSDT","side": "Buy","orderType": "Limit","price":"3.5","qty": "1","positionIdx":1}';
         http_request(endpoint,"POST",data,"Order Create", function(results) {
             res.send(results);
         });
@@ -1247,7 +1260,7 @@ router.get('/leverages', async function(req, res, next) {
 router.get('/instruments', async function(req, res, next) {
     try {
         const endpoint="/v5/market/instruments-info";
-        const data = 'category=linear';
+        const data = 'category=linear&symbol=BTCUSDT';
         http_request(endpoint,"GET",data,"Get Instruments Info", function(resp) {
             let coins = [];
             resp.result.list.map(x => {
@@ -1268,8 +1281,27 @@ router.get('/instruments', async function(req, res, next) {
 router.get('/tickers', async function(req, res, next) {
     try {
         const endpoint="/v5/market/tickers";
-        const data = 'category=linear&symbol=OPUSDT';
-        http_request(endpoint,"GET",data,"Get Tickers", function(resp) {
+        const data = 'category=linear&symbol=';
+        http_request(endpoint,"GET",data,"Get Tickers", async function(resp) {
+            let ressults = [];
+            await Promise.all(
+              resp.result.list.map( async (x) => {
+                const ins = await bybitAPI.get_instrument(x.symbol);
+                ressults.push({symbol: x.symbol, minSize: Number(ins.result.list[0].lotSizeFilter.minOrderQty)});
+              })
+            );
+            res.send(ressults);
+        });
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+router.get('/pnl', async function(req, res, next) {
+    try {
+        const endpoint="/v5/position/closed-pnl";
+        const data = 'category=linear&settleCoin=USDT&symbol=DOGEUSDT&limit=1';
+        http_request(endpoint,"GET",data,"Get Asset Delivery", function(resp) {
             res.send(resp.result.list);
         });
     } catch (error) {
