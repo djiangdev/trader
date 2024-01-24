@@ -84,41 +84,36 @@ async function placeOrder(db, masterId, budget, leverage = 10) {
                 masterSize = formatSize(masterSize, coin.minSize);
                 mySize = formatSize(mySize, coin.minSize);
                 myAmount = (price*mySize)/leverage;
-                if (myAmount <= maxAmountPerOrder) {
-                    const [checkOrderExists, positionByMasters] = await Promise.all([
-                      db.collection('orders').find({order: x.order}).toArray(),
-                      client.db('bybit').collection('positions').find({master_id: masterId, symbol: symbol, side: side}).toArray()
-                    ]);
-                    if (!checkOrderExists.length) {
-                      const exist = currentPositions.find(z => z.symbol == symbol && z.side == side);
-                      if (exist) {
-                        if (!positionByMasters.length) return;
-                        const ticker = await bybitAPI.get_ticker(symbol);
-                        const lastPrice = ticker.result.list ? ticker.result.list[0].lastPrice : price;
-                        if (!isDCA(masterId, symbol, side, exist.avgPrice, lastPrice)) {
-                          return;
-                        }
-                      }
-                      x.time = moment(new Date(Number(time))).unix();
-                      db.collection('orders').insertMany([x]);
-                      const positionIdx = (side == 'Buy') ? 1 : 2;
-                      let promises = [
-                        client.db('bybit').collection('positions').insertMany([{master_id: masterId, symbol: symbol, side: side, sort_time: x.sort_time}]),
-                      ];
-                      if (exist) {
-                        myAmount = (exist.avgPrice*mySize)/leverage;
-                        Func.show_order_log('BNB', get_master(masterId).name, symbol, side, coin.minSize, masterSize, mySize, masterAmount, myAmount, false, exist.avgPrice);
-                        promises.push(bybitAPI.place_order('{"category":"linear","symbol":"'+symbol+'","side": "'+side+'","orderType": "Market","qty": "'+mySize+'","positionIdx":'+positionIdx+'}'));
-                      } else {
-                        await bybitAPI.set_leverage(symbol, leverage);
-                        Func.show_order_log('BNB', get_master(masterId).name, symbol, side, coin.minSize, masterSize, mySize, masterAmount, myAmount, price, false);
-                        promises.push(bybitAPI.place_order('{"category":"linear","symbol":"'+symbol+'","side": "'+side+'","orderType": "Limit", "price": "'+price+'","qty": "'+mySize+'","positionIdx":'+positionIdx+'}'));
-                      }
-                      Promise.all(promises);
+                const [checkOrderExists, positionByMasters] = await Promise.all([
+                  db.collection('orders').find({order: x.order}).toArray(),
+                  client.db('bybit').collection('positions').find({master_id: masterId, symbol: symbol, side: side}).toArray()
+                ]);
+                if (!checkOrderExists.length) {
+                  const exist = currentPositions.find(z => z.symbol == symbol && z.side == side);
+                  if (exist) {
+                    if (!positionByMasters.length) return;
+                    const ticker = await bybitAPI.get_ticker(symbol);
+                    const lastPrice = ticker.result.list ? ticker.result.list[0].lastPrice : price;
+                    if (!isDCA(masterId, symbol, side, exist.avgPrice, lastPrice)) {
+                      return;
                     }
-                } else {
-                  const formatTime = moment.unix(time).format('YYYY-MM-DD HH:mm:ss');
-                  showLog(`[${get_master(masterId).name}] ${x.order} (${formatTime}) số tiền không được vượt quá $${maxAmountPerOrder}: $${myAmount}`, 'warn');
+                  }
+                  x.time = moment(new Date(Number(time))).unix();
+                  db.collection('orders').insertMany([x]);
+                  const positionIdx = (side == 'Buy') ? 1 : 2;
+                  let promises = [
+                    client.db('bybit').collection('positions').insertMany([{master_id: masterId, symbol: symbol, side: side, sort_time: x.sort_time}]),
+                  ];
+                  if (exist) {
+                    myAmount = (exist.avgPrice*mySize)/leverage;
+                    Func.show_order_log('BNB', get_master(masterId).name, symbol, side, coin.minSize, masterSize, mySize, masterAmount, myAmount, false, exist.avgPrice);
+                    promises.push(bybitAPI.place_order('{"category":"linear","symbol":"'+symbol+'","side": "'+side+'","orderType": "Market","qty": "'+mySize+'","positionIdx":'+positionIdx+'}'));
+                  } else {
+                    await bybitAPI.set_leverage(symbol, leverage);
+                    Func.show_order_log('BNB', get_master(masterId).name, symbol, side, coin.minSize, masterSize, mySize, masterAmount, myAmount, price, false);
+                    promises.push(bybitAPI.place_order('{"category":"linear","symbol":"'+symbol+'","side": "'+side+'","orderType": "Limit", "price": "'+price+'","qty": "'+mySize+'","positionIdx":'+positionIdx+'}'));
+                  }
+                  Promise.all(promises);
                 }
             }));
         }

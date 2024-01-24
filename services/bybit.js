@@ -77,39 +77,35 @@ async function placeOrder(db, masterId, budget, leverage = false) {
             masterSize = formatSize(masterSize, coin.minSize);
             mySize = formatSize(mySize, coin.minSize);
             myAmount = (x.entryPrice*mySize)/leverage;
-            if (myAmount <= maxAmountPerOrder) {
-                const [checkOrderExists, positionByMasters] = await Promise.all([
-                  db.collection('orders').find({side: x.side, symbol: x.symbol, createdAtE3: x.createdAtE3}).toArray(),
-                  db.collection('positions').find({master_id: masterId, symbol: x.symbol, side: x.side}).toArray()
-                ]);
-                if (!checkOrderExists.length) {
-                    const exist = currentPositions.find(z => z.symbol == x.symbol && z.side == x.side);
-                    if (exist) {
-                      if (!positionByMasters.length) return;
-                      const ticker = await bybitAPI.get_ticker(x.symbol);
-                      const lastPrice = ticker.result.list ? ticker.result.list[0].lastPrice : x.entryPrice;
-                      if (!isDCA(masterId, x.symbol, x.side, exist.avgPrice, lastPrice)) {
-                        return;
-                      }
-                    }
-                    db.collection('orders').insertMany([x]);
-                    const positionIdx = (x.side == 'Buy') ? 1 : 2;
-                    let promises = [
-                      db.collection('positions').insertMany([{master_id: masterId, symbol: x.symbol, side: x.side, sort_time: x.sort_time}]),
-                    ];
-                    if (exist) {
-                      myAmount = (exist.avgPrice*mySize)/leverage;
-                      Func.show_order_log('BYT', get_master(masterId).name, x.symbol, x.side, coin.minSize, masterSize, mySize, masterAmount, myAmount, false, exist.avgPrice);
-                      promises.push(http_request_order('/v5/order/create', 'POST', '{"category":"linear","symbol":"'+x.symbol+'","side": "'+x.side+'","orderType": "Market","qty": "'+mySize+'","positionIdx":'+positionIdx+'}'));
-                    } else {
-                      await bybitAPI.set_leverage(x.symbol, leverage);
-                      Func.show_order_log('BYT', get_master(masterId).name, x.symbol, x.side, coin.minSize, masterSize, mySize, masterAmount, myAmount, x.entryPrice, false);
-                      promises.push(http_request_order('/v5/order/create', 'POST', '{"category":"linear","symbol":"'+x.symbol+'","side": "'+x.side+'","orderType": "Limit","price":"'+x.entryPrice+'","qty": "'+mySize+'","positionIdx":'+positionIdx+'}'));
-                    }
-                    Promise.all(promises);
+            const [checkOrderExists, positionByMasters] = await Promise.all([
+              db.collection('orders').find({side: x.side, symbol: x.symbol, createdAtE3: x.createdAtE3}).toArray(),
+              db.collection('positions').find({master_id: masterId, symbol: x.symbol, side: x.side}).toArray()
+            ]);
+            if (!checkOrderExists.length) {
+                const exist = currentPositions.find(z => z.symbol == x.symbol && z.side == x.side);
+                if (exist) {
+                  if (!positionByMasters.length) return;
+                  const ticker = await bybitAPI.get_ticker(x.symbol);
+                  const lastPrice = ticker.result.list ? ticker.result.list[0].lastPrice : x.entryPrice;
+                  if (!isDCA(masterId, x.symbol, x.side, exist.avgPrice, lastPrice)) {
+                    return;
+                  }
                 }
-            } else {
-                showLog(`[${get_master(masterId).name}] ${x.symbol} số tiền không được vượt quá $${maxAmountPerOrder}: ${myAmount}`, 'warn');
+                db.collection('orders').insertMany([x]);
+                const positionIdx = (x.side == 'Buy') ? 1 : 2;
+                let promises = [
+                  db.collection('positions').insertMany([{master_id: masterId, symbol: x.symbol, side: x.side, sort_time: x.sort_time}]),
+                ];
+                if (exist) {
+                  myAmount = (exist.avgPrice*mySize)/leverage;
+                  Func.show_order_log('BYT', get_master(masterId).name, x.symbol, x.side, coin.minSize, masterSize, mySize, masterAmount, myAmount, false, exist.avgPrice);
+                  promises.push(http_request_order('/v5/order/create', 'POST', '{"category":"linear","symbol":"'+x.symbol+'","side": "'+x.side+'","orderType": "Market","qty": "'+mySize+'","positionIdx":'+positionIdx+'}'));
+                } else {
+                  await bybitAPI.set_leverage(x.symbol, leverage);
+                  Func.show_order_log('BYT', get_master(masterId).name, x.symbol, x.side, coin.minSize, masterSize, mySize, masterAmount, myAmount, x.entryPrice, false);
+                  promises.push(http_request_order('/v5/order/create', 'POST', '{"category":"linear","symbol":"'+x.symbol+'","side": "'+x.side+'","orderType": "Limit","price":"'+x.entryPrice+'","qty": "'+mySize+'","positionIdx":'+positionIdx+'}'));
+                }
+                Promise.all(promises);
             }
         }));
     }
