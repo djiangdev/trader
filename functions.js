@@ -1,12 +1,37 @@
 const logger = require('node-color-log');
+const cron = require('node-cron');
+const bybitAPI = require('./api/bybit');
 const moment = require('moment-timezone');
 moment.tz.setDefault('Asia/Ho_Chi_Minh');
+const sound = require("sound-play");
+const path = require("path");
 const log = require('node-file-logger');
 log.SetUserOptions({
   timeZone: 'Asia/Ho_Chi_Minh',
   dateFormat: 'YYYY_MM_DD',
   timeFormat: 'YYYY-MM-DD HH:mm:ss',
 });
+
+let currentPositions = [];
+
+(async () => {
+  cron.schedule('*/30 * * * * *', async () => {
+    currentPositions = await get_positions();
+  });
+})();
+
+function list_positions() {
+  return currentPositions;
+}
+
+async function get_positions() {
+  let positions = [];
+  const list = await bybitAPI.get_positions();
+  if (list && list.result.list.length) {
+    positions = list.result.list;
+  }
+  return positions;
+}
 
 function get_coin_sizes() {
     return [
@@ -1252,26 +1277,25 @@ function get_coin_sizes() {
     }
   ]
 }
-
-function show_order_log(logName, masterName, symbol, side, minSize, masterSize, mySize, masterAmount, myAmount, masterEntryPrice = false, myEntryPrice = false) {
+  
+async function show_order_log(logName, masterName, symbol, side, leverage, minSize, masterSize, mySize, masterAmount, masterEntryPrice, myBudget) {
   const logging = logger.createNamedLogger(logName);
   logging.setDate(() => moment().format('YYYY-MM-DD HH:mm:ss'));
   masterAmount = masterAmount.toFixed(2)
-  myAmount = myAmount.toFixed(4)
   side = side.toUpperCase()
-  if (myEntryPrice) {
-    const message = '['+masterName+'] '+ symbol+' '+side+' MA_size_'+ masterSize +'_$'+masterAmount + ' MY_entry_'+myEntryPrice+'_size_' + mySize +'_$'+myAmount;
-    logging.bold().debug(message);
-    log.Info(message);
-  }
-  if (masterEntryPrice) {
-    const message = '['+masterName+'] '+ symbol+' '+side+' MA_entry_'+masterEntryPrice+'_size_'+ masterSize +'_$'+masterAmount + ' MY_size_' + mySize +'_$'+myAmount;
-    logging.bold().debug(message);
-    log.Info(message);
-  }
+  const ticker = await bybitAPI.get_ticker(symbol);
+  const myEntryPrice = ticker.result.list ? ticker.result.list[0].lastPrice : 0;
+  let myAmount = (myEntryPrice*mySize)/leverage;
+  let myRate = (myAmount*100)/myBudget;
+  myAmount = myAmount.toFixed(4)
+  myRate = myRate.toFixed(4)
+  const message = '['+masterName+'] '+ symbol+' '+side+' '+leverage+'x MA_entry_'+masterEntryPrice+'_cost_$'+masterAmount + ' || MY_entry_'+myEntryPrice+'_size_' + mySize +'_cost_$'+myAmount+' ('+myRate+'%)';
+  logging.bold().debug(message);
+  log.Info(message);
+  sound.play(path.join(__dirname, "./sounds/coin-drop.mp3"));
 }
 
-function show_history_log(logName, masterName, symbol, side, masterPNL, masterPNLType='$', myPNL, myPNLType='$') {
+function show_history_log(logName, masterName, symbol, side, leverage, masterEntry, myEntry, masterPNL, masterPNLType='$', myPNL, myPNLType='$') {
   const logging = logger.createNamedLogger(logName);
   logging.setDate(() => moment().format('YYYY-MM-DD HH:mm:ss'));
   if (masterPNLType == '$') masterPNL = '$'+masterPNL;
@@ -1279,11 +1303,14 @@ function show_history_log(logName, masterName, symbol, side, masterPNL, masterPN
   if (myPNLType == '$') myPNL = '$'+myPNL;
   if (myPNLType == '%') myPNL = myPNL+'%';
   side = side.toUpperCase()
-  const message = '['+masterName+'] PNL đã đóng '+symbol+' '+side+' MA_'+masterPNL+' MY_'+myPNL;
+  const message = '['+masterName+'] PNL đã đóng '+symbol+' '+side+' '+leverage+'x MA_entry_'+masterEntry+'_'+masterPNL+' MY_entry_'+myEntry+'_'+myPNL;
   logging.bgColor('magenta').bold().debug(message);
   log.Info(message);
+  sound.play(path.join(__dirname, "./sounds/scale.mp3"));
 }
 
+module.exports.get_positions = get_positions;
+module.exports.list_positions = list_positions;
 module.exports.get_coin_sizes = get_coin_sizes;
 module.exports.show_order_log = show_order_log;
 module.exports.show_history_log = show_history_log;

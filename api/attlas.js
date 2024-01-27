@@ -1,4 +1,5 @@
 const axios = require('axios');
+axios.defaults.timeout = 30000;
 const moment = require('moment-timezone');
 moment.tz.setDefault('Asia/Ho_Chi_Minh');
 const logger = require('node-color-log');

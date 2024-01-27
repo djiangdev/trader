@@ -21,62 +21,60 @@ const client = new MongoClient(dbUri, {
 });
 
 const minSizes = Func.get_coin_sizes();
-let myBudget = 50; // USDT
-let maxAmountPerOrder = 0.5; // USDT
-let scaleRate = 1; // % Master
+let myBudget = 100; // USDT
+let maxAmountPerOrder = 1; // USDT
 let maxContracts = 10; // 10
 let currentPositions = [];
 let logs = [];
 
 const MASTERS = [
   {
-    id: 'htpm4zupMaKsMeFz%2ByOBTA%3D%3D',
-    name: 'FutureCapital',
-    balance: 1000,
-    leverage: 20,
+    id: 'UZ1FFmepTc0jl7sV%2FlesSw%3D%3D',
+    name: 'Bitcorp',
+    balance: 1500,
+    scale: 0.5,
   },
 ];
 
 (async () => {
-    await Promise.all([
-      client.connect(),
-      listPositions()
-    ]);
-    
+    await client.connect();
+    await Func.get_positions();
     const db = client.db('bybit');
 
-    cron.schedule('*/30 * * * * *', async () => {
-        listPositions();
+    cron.schedule('*/3 * * * * *', async () => {
+      currentPositions = Func.list_positions();
     });
 
-    cron.schedule('*/6 * * * * *', async () => {
+    cron.schedule('*/10 * * * * *', async () => {
       for (let index = 0; index < MASTERS.length; index++) {
         const item = MASTERS[index];
-        placeOrder(db, item.id, item.balance, item.leverage);
+        placeOrder(db, item.id, item.balance, item.scale);
         takeProfit(db, item.id);
       }
     });
 })();
 
-async function placeOrder(db, masterId, budget, leverage = false) {
-    const listDetail = await http_request_master('/order/list-detail',"GET",'leaderMark='+masterId+'&pageSize=10&page=1',"Bybit Copy Trading Orders");
+async function placeOrder(db, masterId, budget, scale = 1) {
+    const listDetail = await http_request_master('/order/list-detail',"GET",'leaderMark='+masterId+'&pageSize=10&page=1',"Bybit Copy Open Orders");
     if(listDetail && listDetail.result.data.length) {
         await Promise.all(listDetail.result.data.map( async (x, index) => {
             x.sort_time = moment().unix();
             x.createdAtE3 = moment(new Date(Number(x.createdAtE3))).unix();
-            const leverageE2 = x.leverageE2/100;
-            leverage = leverage ? (leverageE2 < leverage ? leverageE2 : leverage) : leverageE2;
+            let leverage = x.leverageE2/100;
             let coin = minSizes.find(z => x.symbol == z.symbol);
             if (!coin) return;
             let masterSize = Number(x.sizeX)/100000000;
+            masterSize = formatSize(masterSize, coin.minSize);
             let masterAmount = (masterSize*x.entryPrice)/leverage;
             let masterRate = (masterAmount/budget)*100;
             let myAmount = (masterRate*myBudget)/100;
-            let mySize = (scaleRate*myAmount*leverage)/x.entryPrice;
+            if (myAmount > maxAmountPerOrder) myAmount = maxAmountPerOrder;
+            let mySize = (scale*myAmount*leverage)/x.entryPrice;
             mySize = (mySize < coin.minSize) ? coin.minSize : mySize;
-            masterSize = formatSize(masterSize, coin.minSize);
             mySize = formatSize(mySize, coin.minSize);
-            myAmount = (x.entryPrice*mySize)/leverage;
+            myAmount = (mySize*x.entryPrice)/leverage;
+            // let myRate = (myAmount*100)/myBudget;
+            // return console.log(get_master(masterId).name, x.symbol, myRate+'%', mySize, myAmount);
             const [checkOrderExists, positionByMasters] = await Promise.all([
               db.collection('orders').find({side: x.side, symbol: x.symbol, createdAtE3: x.createdAtE3}).toArray(),
               db.collection('positions').find({master_id: masterId, symbol: x.symbol, side: x.side}).toArray()
@@ -97,13 +95,16 @@ async function placeOrder(db, masterId, budget, leverage = false) {
                   db.collection('positions').insertMany([{master_id: masterId, symbol: x.symbol, side: x.side, sort_time: x.sort_time}]),
                 ];
                 if (exist) {
-                  myAmount = (exist.avgPrice*mySize)/leverage;
-                  Func.show_order_log('BYT', get_master(masterId).name, x.symbol, x.side, coin.minSize, masterSize, mySize, masterAmount, myAmount, false, exist.avgPrice);
-                  promises.push(http_request_order('/v5/order/create', 'POST', '{"category":"linear","symbol":"'+x.symbol+'","side": "'+x.side+'","orderType": "Market","qty": "'+mySize+'","positionIdx":'+positionIdx+'}'));
+                  Func.show_order_log('BYT', get_master(masterId).name, x.symbol, x.side, leverage, coin.minSize, masterSize, mySize, masterAmount, x.entryPrice, myBudget);
+                  promises.push(
+                    http_request_order('/v5/order/create', 'POST', '{"category":"linear","symbol":"'+x.symbol+'","side": "'+x.side+'","orderType": "Market","qty": "'+mySize+'","positionIdx":'+positionIdx+'}')
+                  );
                 } else {
                   await bybitAPI.set_leverage(x.symbol, leverage);
-                  Func.show_order_log('BYT', get_master(masterId).name, x.symbol, x.side, coin.minSize, masterSize, mySize, masterAmount, myAmount, x.entryPrice, false);
-                  promises.push(http_request_order('/v5/order/create', 'POST', '{"category":"linear","symbol":"'+x.symbol+'","side": "'+x.side+'","orderType": "Limit","price":"'+x.entryPrice+'","qty": "'+mySize+'","positionIdx":'+positionIdx+'}'));
+                  Func.show_order_log('BYT', get_master(masterId).name, x.symbol, x.side, leverage, coin.minSize, masterSize, mySize, masterAmount, x.entryPrice, myBudget);
+                  promises.push(
+                    http_request_order('/v5/order/create', 'POST', '{"category":"linear","symbol":"'+x.symbol+'","side": "'+x.side+'","orderType": "Limit","price":"'+x.entryPrice+'","qty": "'+mySize+'","positionIdx":'+positionIdx+'}')
+                  );
                 }
                 Promise.all(promises);
             }
@@ -112,7 +113,7 @@ async function placeOrder(db, masterId, budget, leverage = false) {
 }
 
 async function takeProfit(db, masterId) {
-    const leaderHistory = await http_request_master('/leader-history',"GET",'page=1&leaderMark='+masterId,"Bybit Copy Trading History");
+    const leaderHistory = await http_request_master('/leader-history',"GET",'page=1&leaderMark='+masterId,"Bybit Copy Close Positions");
     if(leaderHistory && leaderHistory.result.data.length) {
         const histories = distinct(leaderHistory.result.data, ['closedTimeE3']);
         await Promise.all(histories.map( async (x, index) => {
@@ -134,13 +135,13 @@ async function takeProfit(db, masterId) {
                   http_request_order('/v5/order/create', 'POST', '{"category":"linear","symbol":"'+x.symbol+'","side": "'+revertSide+'","orderType": "Market","qty": "'+exist.size+'","positionIdx":'+exist.positionIdx+',"reduceOnly":true}', 'Close order'),
                   closeOpenOrders(exist.symbol, exist.side),
                 ]);
+                const pnl = await bybitAPI.get_pnl(x.symbol);
                 setTimeout( async () => {
-                  const pnl = await bybitAPI.get_pnl(x.symbol);
-                  Func.show_history_log('BYT', get_master(masterId).name, x.symbol, x.side, x.orderNetProfitRateE4/100, '%', pnl.result.list[0].closedPnl, '$');
+                  Func.show_history_log('BYT', get_master(masterId).name, x.symbol, x.side, exist.leverage, x.positionEntryPrice, pnl.result.list[0].avgExitPrice, x.orderNetProfitRateE4/100, '%', pnl.result.list[0].closedPnl, '$');
                 }, 1000);
               } else {
-                closeOpenOrders(x.symbol, x.side);
                 db.collection('history').insertMany([x]);
+                await closeOpenOrders(x.symbol, x.side);
               }
             }
         }));
@@ -238,7 +239,7 @@ async function setLeverage(symbol, leverage = 20) {
 }
 
 async function listPositions() {
-  const list = await http_request_order('/v5/position/list', 'GET', 'category=linear&settleCoin=USDT');
+  const list = await bybitAPI.get_positions();
   if (list && list.result.list.length) {
       currentPositions = list.result.list;
   }

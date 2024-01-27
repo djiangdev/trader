@@ -3,6 +3,7 @@ const axios = require('axios');
 const express = require('express');
 const router = express.Router();
 const bybitAPI = require('../api/bybit');
+const binanceAPI = require('../api/binance');
 
 const url=process.env.BYBIT_API_URI;
 const apiKey = process.env.BYBIT_API_KEY;
@@ -13,7 +14,7 @@ const timestamp = Date.now().toString();
 router.get('/list', async function(req, res, next) {
     try {
         const endpoint="/v5/position/list"
-        const data = 'category=linear&settleCoin=USDT&symbol=AVAXUSDT';
+        const data = 'category=linear&settleCoin=USDT&limit=100&symbol=';
         http_request(endpoint,"GET",data,"Order List", function(results) {
             let positionIM = 0;
             let unrealisedPnl = 0;
@@ -1297,16 +1298,35 @@ router.get('/tickers', async function(req, res, next) {
     }
 });
 
-router.get('/pnl', async function(req, res, next) {
+router.get('/pnl/:symbol?', async function(req, res, next) {
+    const symbol = req.params.symbol ? req.params.symbol : '';
     try {
         const endpoint="/v5/position/closed-pnl";
-        const data = 'category=linear&settleCoin=USDT&symbol=DOGEUSDT&limit=1';
+        const data = 'category=linear&settleCoin=USDT&limit=1&symbol='+symbol;
         http_request(endpoint,"GET",data,"Get Asset Delivery", function(resp) {
             res.send(resp.result.list);
         });
     } catch (error) {
         console.log(error);
     }
+});
+
+router.get('/bnb_traders', async function(req, res, next) {
+  try {
+      const results = await binanceAPI.copy_traders('30D', 'PNL');
+      if (results && results.data.list.length) {
+        const data = [];
+        results.data.list.map(x => {
+          if (x.mdd) {
+            x.rmd = x.roi/x.mdd;
+            data.push(x);
+          }
+        });
+        res.send(sortByKey(data, 'rmd'));
+      }
+  } catch (error) {
+      console.log(error);
+  }
 });
 
 const fetch = require("node-fetch");
@@ -1325,6 +1345,13 @@ router.get('/binance', async function(req, res, next) {
   const content = await rawResponse.json();
   res.send(content);
 });
+
+function sortByKey(array, key) {
+  return array.sort(function(a, b) {
+      var x = a[key]; var y = b[key];
+      return ((x > y) ? -1 : ((x < y) ? 1 : 0));
+  });
+}
 
 function getSignature(parameters, secret) {
     return crypto.createHmac('sha256', secret).update(timestamp + apiKey + recvWindow + parameters).digest('hex');

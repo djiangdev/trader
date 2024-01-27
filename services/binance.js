@@ -23,48 +23,52 @@ const client = new MongoClient(dbUri, {
 });
 
 const minSizes = Func.get_coin_sizes();
-let myBudget = 50; // USDT
-let scaleRate = 1; // % Master
+let myBudget = 100; // USDT
 let maxContracts = 10; // 10
-let maxAmountPerOrder = 0.5; // USDT
+let maxAmountPerOrder = 1; // USDT
 let currentPositions = [];
 let logs = [];
 
 const MASTERS = [
   {
-    id: '3782690787637792000',
-    name: 'SnowAlex',
+    id: '3725468878881937408',
+    name: 'MasterRayn',
     leverage: 20,
-    balance: 35000,
-  }
+    balance: 200000,
+    scale: 1.5,
+  },
+  {
+    id: '3766214453321446144',
+    name: 'Soi_Gia_Crypto',
+    leverage: 20,
+    balance: 95000,
+    scale: 1,
+  },
 ];
 
 (async () => {
-    await Promise.all([
-      client.connect(),
-      listPositions()
-    ])
-
+    await client.connect();
+    await Func.get_positions();
     const db = client.db('binance');
 
-    cron.schedule('*/30 * * * * *', async () => {
-        listPositions();
+    cron.schedule('*/15 * * * * *', async () => {
+        currentPositions = Func.list_positions();
     });
 
-    cron.schedule('*/8 * * * * *', async () => {
+    cron.schedule('*/10 * * * * *', async () => {
       for (let index = 0; index < MASTERS.length; index++) {
         const item = MASTERS[index];
-        placeOrder(db, item.id, item.balance, item.leverage);
+        placeOrder(db, item.id, item.balance, item.leverage, item.scale);
       }
     });
 })();
 
-async function placeOrder(db, masterId, budget, leverage = 10) {
+async function placeOrder(db, masterId, budget, leverage = 10, scale = 1) {
     const result = await binanceAPI.trade_history(masterId);
     if (result.success && result.data.list.length) {
-        takeProfit(db, result.data.list, masterId);
+        takeProfit(db, masterId, result.data.list);
         var noProfits = result.data.list.filter(x => x.realizedProfit == 0);
-        const data = await filterData(db, noProfits);
+        const data = await sumQuantity(db, noProfits);
         if (data.length) {
             await Promise.all(data.map( async (x, index) => {
                 x.sort_time = moment().unix();
@@ -72,18 +76,21 @@ async function placeOrder(db, masterId, budget, leverage = 10) {
                 let side = x.order.split('/')[1];
                 let time = x.order.split('/')[2];
                 let price = result.data.list.find(k => symbol == k.symbol && side == k.side)['price'];
+                side = (side == 'BUY') ? 'Buy' : 'Sell';
                 let coin = minSizes.find(z => symbol == z.symbol);
                 if (!coin) return;
                 let masterSize = x.qty;
+                masterSize = formatSize(masterSize, coin.minSize);
                 let masterAmount = (masterSize*price)/leverage;
                 let masterRate = (masterAmount/budget)*100;
                 let myAmount = (masterRate*myBudget)/100;
-                let mySize = (scaleRate*myAmount*leverage)/price;
-                side = (side == 'BUY') ? 'Buy' : 'Sell';
+                if (myAmount > maxAmountPerOrder) myAmount = maxAmountPerOrder;
+                let mySize = (scale*myAmount*leverage)/price;
                 mySize = (mySize < coin.minSize) ? coin.minSize : mySize;
-                masterSize = formatSize(masterSize, coin.minSize);
                 mySize = formatSize(mySize, coin.minSize);
-                myAmount = (price*mySize)/leverage;
+                myAmount = (mySize*price)/leverage;
+                // let myRate = (myAmount/myBudget)*100;
+                // return console.log(get_master(masterId).name, symbol, myRate+'%', myAmount);
                 const [checkOrderExists, positionByMasters] = await Promise.all([
                   db.collection('orders').find({order: x.order}).toArray(),
                   client.db('bybit').collection('positions').find({master_id: masterId, symbol: symbol, side: side}).toArray()
@@ -105,13 +112,16 @@ async function placeOrder(db, masterId, budget, leverage = 10) {
                     client.db('bybit').collection('positions').insertMany([{master_id: masterId, symbol: symbol, side: side, sort_time: x.sort_time}]),
                   ];
                   if (exist) {
-                    myAmount = (exist.avgPrice*mySize)/leverage;
-                    Func.show_order_log('BNB', get_master(masterId).name, symbol, side, coin.minSize, masterSize, mySize, masterAmount, myAmount, false, exist.avgPrice);
-                    promises.push(bybitAPI.place_order('{"category":"linear","symbol":"'+symbol+'","side": "'+side+'","orderType": "Market","qty": "'+mySize+'","positionIdx":'+positionIdx+'}'));
+                    Func.show_order_log('BNB', get_master(masterId).name, symbol, side, leverage, coin.minSize, masterSize, mySize, masterAmount, price, myBudget);
+                    promises.push(
+                      bybitAPI.place_order('{"category":"linear","symbol":"'+symbol+'","side": "'+side+'","orderType": "Market","qty": "'+mySize+'","positionIdx":'+positionIdx+'}')
+                    );
                   } else {
                     await bybitAPI.set_leverage(symbol, leverage);
-                    Func.show_order_log('BNB', get_master(masterId).name, symbol, side, coin.minSize, masterSize, mySize, masterAmount, myAmount, price, false);
-                    promises.push(bybitAPI.place_order('{"category":"linear","symbol":"'+symbol+'","side": "'+side+'","orderType": "Limit", "price": "'+price+'","qty": "'+mySize+'","positionIdx":'+positionIdx+'}'));
+                    Func.show_order_log('BNB', get_master(masterId).name, symbol, side, leverage, coin.minSize, masterSize, mySize, masterAmount, price, myBudget);
+                    promises.push(
+                      bybitAPI.place_order('{"category":"linear","symbol":"'+symbol+'","side": "'+side+'","orderType": "Limit", "price": "'+price+'","qty": "'+mySize+'","positionIdx":'+positionIdx+'}')
+                    );
                   }
                   Promise.all(promises);
                 }
@@ -120,40 +130,40 @@ async function placeOrder(db, masterId, budget, leverage = 10) {
     }
 };
 
-async function takeProfit(db, results, masterId) {
-    var profits = results.filter(x => x.realizedProfit != 0);
-    var histories = distinct(profits, ['time']);
-    if (histories.length) {
-      await Promise.all(histories.map( async (x, index) => {
+async function takeProfit(db, masterId, orders = []) {
+    var results = await binanceAPI.position_history(masterId);
+    if (results.success && results.data.list.length) {
+      await Promise.all(results.data.list.map( async (x, index) => {
           x.sort_time = moment().unix();
-          x.time = moment(new Date(Number(x.time))).unix();
-          const positionSide = (x.side == 'BUY') ? 'Sell' : 'Buy';
+          x.closed = moment(new Date(Number(x.closed))).unix();
+          x.opened = moment(new Date(Number(x.opened))).unix();
+          x.updateTime = moment(new Date(Number(x.updateTime))).unix();
+          x.side = (x.side == 'Short') ? 'Sell' : 'Buy';
           const [checkHistoryExists, positionByMasters] = await Promise.all([
-            db.collection('history').find({side: x.side, symbol: x.symbol, time: x.time}).toArray(),
-            client.db('bybit').collection('positions').find({master_id: masterId, symbol: x.symbol, side: positionSide}).toArray()
+            db.collection('history').find({side: x.side, symbol: x.symbol, updateTime: x.updateTime}).toArray(),
+            client.db('bybit').collection('positions').find({master_id: masterId, symbol: x.symbol, side: x.side}).toArray()
           ]);
           if (!checkHistoryExists.length && positionByMasters.length) {
-            const exist = currentPositions.find(z => z.symbol == x.symbol && z.side == positionSide);
+            const exist = currentPositions.find(z => z.symbol == x.symbol && z.side == x.side);
             if (exist) {
-              const positionIdx = (positionSide == 'Buy') ? 1 : 2;
-              const closeSide = (positionSide == 'Buy') ? 'Sell' : 'Buy';
+              const positionIdx = (x.side == 'Buy') ? 1 : 2;
+              const closeSide = (x.side == 'Buy') ? 'Sell' : 'Buy';
+              const orderedSide = (x.side == 'Buy') ? 'SELL' : 'BUY';
+              const ordered = orders.find(z => z.symbol == x.symbol && z.side == orderedSide);
+              const orderPrice = ordered && ordered.price ? ordered.price : exist.markPrice;
               await Promise.all([
                 db.collection('history').insertMany([x]),
-                client.db('bybit').collection('positions').deleteMany({ master_id: masterId, symbol: x.symbol, side: positionSide }),
-                bybitAPI.place_order('{"category":"linear","symbol":"'+x.symbol+'","side": "'+closeSide+'","orderType": "Market","qty": "'+exist.size+'","positionIdx":'+positionIdx+',"reduceOnly":true}'),
-                closeOpenOrders(exist.symbol, positionSide),
+                client.db('bybit').collection('positions').deleteMany({ master_id: masterId, symbol: x.symbol, side: x.side }),
+                bybitAPI.place_order('{"category":"linear","symbol":"'+x.symbol+'","side": "'+closeSide+'","orderType": "Limit","price: "'+orderPrice+'","qty": "'+exist.size+'","positionIdx":'+positionIdx+',"reduceOnly":true}'),
+                closeOpenOrders(x.symbol, x.side),
               ]);
+              const pnl = await bybitAPI.get_pnl(x.symbol);
               setTimeout( async () => {
-                const [ pnl, sumProfits ] = await Promise.all([
-                  bybitAPI.get_pnl(x.symbol),
-                  filterData(db, profits),
-                ]);
-                const sumQty = sumProfits.find(z => z.order.includes(`${x.symbol}/${x.side}`));
-                Func.show_history_log('BNB', get_master(masterId).name, x.symbol, positionSide, sumQty.qty, '$', pnl.result.list[0].closedPnl, '$');
+                Func.show_history_log('BNB', get_master(masterId).name, x.symbol, x.side, exist.leverage, x.avgClosePrice, pnl.result.list[0].avgExitPrice, x.closingPnl, '$', pnl.result.list[0].closedPnl, '$');
               }, 1000);
             } else {
-              closeOpenOrders(x.symbol, positionSide);
               db.collection('history').insertMany([x]);
+              await closeOpenOrders(x.symbol, x.side);
             }
           }
       }));
@@ -168,7 +178,7 @@ async function listPositions() {
     return currentPositions;
 }
 
-async function filterData(db, results) {
+async function sumQuantity(db, results) {
     let data = [];
     var holder = {};
 
@@ -189,6 +199,29 @@ async function filterData(db, results) {
     }
 
     return data;
+}
+
+async function sumProfits(db, results) {
+  let data = [];
+  var holder = {};
+
+  await Promise.all(
+    results.map( async (x) => {
+          x.time = moment(new Date(Number(x.time))).unix();
+          const key = x.symbol+'/'+x.side +'/'+x.time;
+          if (holder.hasOwnProperty(key)) {
+              holder[key] = holder[key] + x.realizedProfit;
+          } else {
+              holder[key] = x.realizedProfit;
+          }
+      })
+  );
+
+  for (var prop in holder) {
+      data.push({ order: prop, profit: holder[prop] });
+  }
+
+  return data;
 }
 
 async function closeOpenOrders(symbol, side) {

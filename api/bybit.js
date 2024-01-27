@@ -1,4 +1,5 @@
 const axios = require('axios');
+axios.defaults.timeout = 30000;
 const crypto = require('crypto');
 const moment = require('moment-timezone');
 moment.tz.setDefault('Asia/Ho_Chi_Minh');
@@ -77,7 +78,7 @@ async function set_leverage(symbol, leverage) {
 async function get_positions(symbol = '') {
     try {
         var endpoint = '/v5/position/list';
-        var data = 'category=linear&settleCoin=USDT&symbol='+symbol;
+        var data = 'category=linear&settleCoin=USDT&limit=100&symbol='+symbol;
         var sign = crypto.createHmac('sha256', secret).update(timestamp + apiKey + recvWindow + data).digest('hex');
         var fullendpoint = url + endpoint + "?" + data;
         data = "";
@@ -139,7 +140,7 @@ async function get_ticker(symbol) {
 async function get_pnl(symbol) {
     try {
         var endpoint="/v5/position/closed-pnl";
-        var data = 'category=linear&limit=1&symbol=' + symbol;
+        var data = 'category=linear&settleCoin=USDT&limit=1&symbol=' + symbol;
         var sign = crypto.createHmac('sha256', secret).update(timestamp + apiKey + recvWindow + data).digest('hex');
         var fullendpoint = url + endpoint + "?" + data;
         data = "";
