@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const axios = require('axios');
 const express = require('express');
 const router = express.Router();
+const fetch = require("node-fetch");
 const bybitAPI = require('../api/bybit');
 const binanceAPI = require('../api/binance');
 
@@ -83,7 +84,7 @@ router.get('/close', async function(req, res, next) {
 router.get('/leverage', async function(req, res, next) {
     try {
         const endpoint="/v5/position/set-leverage";
-        const data = '{"category":"linear","symbol":"LINKUSDT","buyLeverage":"20","sellLeverage":"20"}';
+        const data = '{"category":"linear","symbol":"BTCUSDT","buyLeverage":"100","sellLeverage":"100"}';
         http_request(endpoint,"POST",data,"Set Leverage", function(results) {
             res.send(results);
         });
@@ -1261,7 +1262,7 @@ router.get('/leverages', async function(req, res, next) {
 router.get('/instruments', async function(req, res, next) {
     try {
         const endpoint="/v5/market/instruments-info";
-        const data = 'category=linear&symbol=BTCUSDT';
+        const data = 'category=linear&symbol=';
         http_request(endpoint,"GET",data,"Get Instruments Info", function(resp) {
             let coins = [];
             resp.result.list.map(x => {
@@ -1269,6 +1270,8 @@ router.get('/instruments', async function(req, res, next) {
                     coins.push({
                         symbol: x.symbol,
                         minSize: Number(x.lotSizeFilter.minOrderQty),
+                        maxLeverage: Number(x.leverageFilter.maxLeverage),
+                        minPrice: Number(x.priceFilter.minPrice),
                     });
                 }
             });
@@ -1284,14 +1287,14 @@ router.get('/tickers', async function(req, res, next) {
         const endpoint="/v5/market/tickers";
         const data = 'category=linear&symbol=';
         http_request(endpoint,"GET",data,"Get Tickers", async function(resp) {
-            let ressults = [];
+            let results = [];
             await Promise.all(
               resp.result.list.map( async (x) => {
                 const ins = await bybitAPI.get_instrument(x.symbol);
-                ressults.push({symbol: x.symbol, minSize: Number(ins.result.list[0].lotSizeFilter.minOrderQty)});
+                results.push({symbol: x.symbol, minSize: Number(ins.result.list[0].lotSizeFilter.minOrderQty)});
               })
             );
-            res.send(ressults);
+            res.send(resp.result.list);
         });
     } catch (error) {
         console.log(error);
@@ -1329,7 +1332,33 @@ router.get('/bnb_traders', async function(req, res, next) {
   }
 });
 
-const fetch = require("node-fetch");
+router.get('/market_pairs', async function(req, res, next) {
+  try {
+    const rawResponse = await fetch(
+      "https://api.coinmarketcap.com/data-api/v3/exchange/market-pairs/latest?slug=bybit&category=perpetual&start=1&limit=50", 
+      {
+      "headers": {
+        "content-type": "application/json",
+      },
+      "method": "get"
+    });
+
+    const content = await rawResponse.json();
+    let data = [];
+    let i = 1;
+    content.data.marketPairs.forEach(x => {
+      if (x.quoteSymbol == 'USDT') {
+        if (i > 30) return;
+        data.push(x.marketPair.replace('/',''));
+        i++;
+      }
+    });
+    res.send(data);
+  } catch (error) {
+      console.log(error);
+  }
+});
+
 router.get('/binance', async function(req, res, next) {
   const rawResponse = await fetch("https://www.binance.com/bapi/futures/v2/private/future/leaderboard/getOtherPosition", {
     "headers": {
